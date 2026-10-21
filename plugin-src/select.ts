@@ -39,13 +39,10 @@ commands.select = async (a) => {
       case "subject":
         // Select Subject has no DOM call; it looks at the target layer unless sampling all layers.
         if (layer) doc.activeLayers = [layer];
-        await ps.action.batchPlay([{ _obj: "autoCutout", sampleAllLayers: !layer }], { modalBehavior: "execute" });
+        await play([{ _obj: "autoCutout", sampleAllLayers: !layer }], "select");
         break;
       case "layer":
-        await ps.action.batchPlay(
-          [{ _obj: "set", _target: [SELECTION], to: { _ref: [{ _ref: "channel", _enum: "channel", _value: "transparencyEnum" }, { _ref: "layer", _id: layer!.id }] } }],
-          { modalBehavior: "execute" },
-        );
+        await play([{ _obj: "set", _target: [SELECTION], to: { _ref: [{ _ref: "channel", _enum: "channel", _value: "transparencyEnum" }, { _ref: "layer", _id: layer!.id }] } }], "select");
         break;
       case undefined:
         break;
@@ -60,10 +57,7 @@ commands.select = async (a) => {
     if (maskLayer) {
       if (!bounds) fail("BAD_ARGS", "Nothing is selected, so there is no mask to make.", "Select something first (shape, subject or layer).");
       doc.activeLayers = [maskLayer];
-      await ps.action.batchPlay(
-        [{ _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } }],
-        { modalBehavior: "execute" },
-      );
+      await play([{ _obj: "make", new: { _class: "channel" }, at: { _ref: "channel", _enum: "channel", _value: "mask" }, using: { _enum: "userMaskEnabled", _value: "revealSelection" } }], "select");
       await s.deselect();
       out.mask_on = maskLayer.id;
     }

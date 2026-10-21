@@ -660,7 +660,10 @@ export function fakePhotoshop() {
             if (L.effects) got.layerEffects = L.effects;
             out.push(got);
           } else {
-            if (d._obj === "fail") throw new Error("descriptor failed");
+            if (d._obj === "fail") {
+              out.push({ _obj: "error", message: "Photoshop MCP: descriptor failed", result: -25920 }); // live: no throw
+              continue;
+            }
             const paths = JSON.stringify(d).match(/"_path":"[^"]*"/g);
             if (paths) state.calls.push("batchPlay paths " + paths.join(","));
             state.calls.push("batchPlay " + d._obj);

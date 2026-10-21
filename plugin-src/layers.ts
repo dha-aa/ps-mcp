@@ -40,7 +40,7 @@ commands.set_layer = async (a) => {
       // Photoshop 27.10 has no constants.FlipAxis (the docs list it): flip with Edit > Transform's descriptor.
       if (a.flip) {
         for (const axis of a.flip === "both" ? ["horizontal", "vertical"] : [a.flip]) {
-          await ps.action.batchPlay([{ _obj: "flip", _target: [{ _ref: "layer", _id: layer.id }], axis: { _enum: "orientation", _value: axis } }], { modalBehavior: "execute" });
+          await play([{ _obj: "flip", _target: [{ _ref: "layer", _id: layer.id }], axis: { _enum: "orientation", _value: axis } }], "set_layer");
         }
       }
       if (a.x === undefined && a.y === undefined) await centreAt(layer, c.x, c.y);
@@ -112,7 +112,7 @@ commands.layer_ops = async (a) => {
         need(2);
         // Merge the selected layers into the top one (Layer > Merge Layers).
         doc.activeLayers = layers;
-        await ps.action.batchPlay([{ _obj: "mergeLayersNew" }], { modalBehavior: "execute" });
+        await play([{ _obj: "mergeLayersNew" }], "set_layer");
         const m = doc.activeLayers[0];
         if (a.name !== undefined) m.name = a.name;
         return { layer: layerBrief(m), merged: ids };

@@ -1,6 +1,6 @@
 // Runs tool calls through the built server, like an MCP client would: node scripts/call.ts steps.json [--keep-going]
 // steps.json: [{"tool": "get_document", "args": {...}, "save": "/abs/preview.jpg"}, ...]. Stops at the first error
-// unless --keep-going (then every step runs and the exit code says whether any failed).
+// unless --keep-going (then every step runs and the exit code says whether any failed). --full prints whole results.
 // "save" writes a result's image to a file. Args may use "$N.path" to reuse step N's result (1-based).
 import { readFileSync, writeFileSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/client";
@@ -45,7 +45,7 @@ for (const [i, s] of steps.entries()) {
   const text = r.content.find((c) => c.type === "text")?.text ?? "{}";
   const img = r.content.find((c) => c.type === "image");
   if (img && s.save) writeFileSync(s.save, Buffer.from(img.data!, "base64"));
-  console.log(`${i + 1}. ${s.tool} ${r.isError ? "ERROR " : ""}${text.length > 1500 ? text.slice(0, 1500) + "..." : text}${img && s.save ? " -> " + s.save : ""}`);
+  console.log(`${i + 1}. ${s.tool} ${r.isError ? "ERROR " : ""}${text.length > 1500 && !process.argv.includes("--full") ? text.slice(0, 1500) + "..." : text}${img && s.save ? " -> " + s.save : ""}`);
   let parsed: unknown = text;
   try {
     parsed = JSON.parse(text);

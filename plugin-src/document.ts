@@ -48,7 +48,7 @@ commands.place_image = async (a) => {
     activate(doc);
     const before = layerIds(doc);
     const token = uxp.storage.localFileSystem.createSessionToken(entry);
-    await ps.action.batchPlay(
+    await play(
       [
         {
           _obj: "placeEvent",
@@ -57,7 +57,7 @@ commands.place_image = async (a) => {
           offset: { _obj: "offset", horizontal: { _unit: "pixelsUnit", _value: 0 }, vertical: { _unit: "pixelsUnit", _value: 0 } },
         },
       ],
-      {},
+      "place_image",
     );
     // The placed layer is the new one, never just "the selected layer": a file Photoshop can't read places nothing,
     // and the selected layer would then be moved and scaled as if it were the image (seen live).
@@ -129,7 +129,7 @@ commands.batch_play = async (a) => {
   const doc = a.document_id !== undefined ? findDoc(a.document_id) : ps.app.activeDocument;
   return modal("batch_play", doc, async () => {
     if (doc) activate(doc);
-    const r = await ps.action.batchPlay((await tokenizePaths(a.descriptors)) as object[], { modalBehavior: "execute" });
+    const r = await play((await tokenizePaths(a.descriptors)) as object[], "batch_play");
     // Photoshop echoes each descriptor back; keep only what is new: "get" results and ids of layers made.
     const out: Record<string, unknown> = { ran: r.length };
     const gets: unknown[] = [];

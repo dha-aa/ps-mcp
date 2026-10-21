@@ -95,7 +95,7 @@ commands.add_fill = async (a) => {
     const using: Record<string, unknown> = { _obj: "contentLayer", name, type };
     if (a.clip === true) using.group = true;
     // A fill layer made with an active selection takes it as its mask (seen live).
-    await ps.action.batchPlay([{ _obj: "make", _target: [{ _ref: "contentLayer" }], using }], { modalBehavior: "execute" });
+    await play([{ _obj: "make", _target: [{ _ref: "contentLayer" }], using }], "looks");
     if (a.shape) await doc.selection.deselect();
     const layer = doc.activeLayers[0];
     if (a.opacity !== undefined) layer.opacity = a.opacity;
@@ -147,7 +147,7 @@ commands.add_adjustment = async (a) => {
     const using: Record<string, unknown> = { _obj: "adjustmentLayer", type: make(a) };
     if (a.name !== undefined) using.name = a.name;
     if (a.clip === true) using.group = true;
-    await ps.action.batchPlay([{ _obj: "make", _target: [{ _ref: "adjustmentLayer" }], using }], { modalBehavior: "execute" });
+    await play([{ _obj: "make", _target: [{ _ref: "adjustmentLayer" }], using }], "looks");
     const layer = doc.activeLayers[0];
     if (a.opacity !== undefined) layer.opacity = a.opacity;
     if (a.blend !== undefined) layer.blendMode = constant("BlendMode", a.blend) as string;
@@ -180,7 +180,7 @@ commands.set_style = async (a) => {
   if (layer.isBackgroundLayer) fail("BAD_ARGS", "The Background layer can't have layer styles.", "Duplicate it first (layer_ops duplicate).");
   return modal("set_style", doc, async () => {
     activate(doc);
-    const got = await ps.action.batchPlay([{ _obj: "get", _target: [{ _ref: "layer", _id: layer.id }] }], { modalBehavior: "execute" });
+    const got = await play([{ _obj: "get", _target: [{ _ref: "layer", _id: layer.id }] }], "looks");
     const fx: Record<string, any> = { _obj: "layerEffects", scale: pctDesc(100), ...((got[0] && got[0].layerEffects) || {}) };
     const changed: string[] = [];
     for (const kind of Object.keys(EFFECT_KEYS)) {
@@ -198,7 +198,7 @@ commands.set_style = async (a) => {
       }
       changed.push(kind);
     }
-    await ps.action.batchPlay([{ _obj: "set", _target: [{ _ref: "property", _property: "layerEffects" }, { _ref: "layer", _id: layer.id }], to: fx }], { modalBehavior: "execute" });
+    await play([{ _obj: "set", _target: [{ _ref: "property", _property: "layerEffects" }, { _ref: "layer", _id: layer.id }], to: fx }], "looks");
     const on = Object.keys(EFFECT_KEYS).filter((k) => fx[EFFECT_KEYS[k]] && fx[EFFECT_KEYS[k]].enabled !== false);
     return { layer: layerBrief(layer), changed, effects: on };
   });

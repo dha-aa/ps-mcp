@@ -2,7 +2,7 @@
 // The plugin is several script files (no imports) joined in order by scripts/build-plugin.ts into
 // plugin/js/main.js; test/plugin-harness.ts runs that same file in a vm with fake Photoshop modules.
 
-const PLUGIN_VERSION = "0.5.3";
+const PLUGIN_VERSION = "0.5.4";
 const SCAN_MS = 2000;
 const RETRY_MS = 10000;
 
@@ -163,10 +163,7 @@ function docInfo(d: PsDocument, maxDepth: number, parent?: PsLayer, maxLayers = 
 /** The placed layer's box from its smart-object transform (includes transparent margins), else its bounds. */
 async function placedBox(doc: PsDocument, layer: PsLayer): Promise<{ l: number; t: number; w: number; h: number }> {
   try {
-    const r = await ps.action.batchPlay(
-      [{ _obj: "get", _target: [{ _ref: "layer", _id: layer.id }, { _ref: "document", _id: doc.id }], _options: { dialogOptions: "dontDisplay" } }],
-      {},
-    );
+    const r = await play([{ _obj: "get", _target: [{ _ref: "layer", _id: layer.id }, { _ref: "document", _id: doc.id }], _options: { dialogOptions: "dontDisplay" } }], "reading the placed layer");
     const t = r[0] && r[0].smartObjectMore && r[0].smartObjectMore.transform;
     if (Array.isArray(t) && t.length === 8) {
       const xs = [t[0], t[2], t[4], t[6]];
@@ -193,6 +190,18 @@ async function centreAt(layer: PsLayer, x: number | undefined, y: number | undef
     if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) return;
     await layer.translate(dx, dy);
   }
+}
+
+/** Runs batchPlay and fails on the first descriptor that failed: Photoshop does not throw, it returns
+ * {_obj: "error", message, result} in that descriptor's place (seen live). */
+async function play(descriptors: object[], what: string): Promise<Array<Record<string, any>>> {
+  const r = await ps.action.batchPlay(descriptors, { modalBehavior: "execute" });
+  const i = r.findIndex((x) => x && x._obj === "error");
+  if (i >= 0) {
+    const d = descriptors[i] as { _obj?: string };
+    fail("PS_ERROR", `${what}: step ${i + 1}${d._obj ? ` (${d._obj})` : ""} failed: ${String(r[i].message ?? "unknown error").replace(/^Photoshop MCP: /, "")}`, "Nothing was kept. uxp_docs and record_actions show working descriptors.");
+  }
+  return r;
 }
 
 /** Selects the layer: some layer setters (allLocked) and new-layer placement follow the selection, not the layer

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.4
+
+- Every batchPlay call checks its results: Photoshop does not throw when a descriptor fails, it returns
+  `{_obj: "error", message}` in its place (seen live), so `batch_play` reported success for failed steps and the
+  plugin's own descriptors (place, select subject, masks, fills, styles, flip, merge) could fail silently. Now the
+  call fails with the step and Photoshop's message, and a `batch_play` is rolled back as a whole.
+
 ## 0.5.3
 
 - `place_image` finds the placed layer by comparing layer ids, and fails if none appeared: Photoshop places nothing,

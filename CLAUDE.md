@@ -39,7 +39,7 @@ npm run typecheck
   `test/e2e.test.ts`, a step in `test/live.ts`, the README table and a CHANGELOG line.
 - Watch the token cost: `npm test` prints the size of tools/list. Share schemas (`src/tools/schemas.ts`), keep
   descriptions short, never repeat in a description what the schema says.
-- Every Photoshop change goes through `modal(name, doc, fn)` (executeAsModal + one history step, rolled back on
+- Every batchPlay goes through `play(descriptors, what)`; every Photoshop change goes through `modal(name, doc, fn)` (executeAsModal + one history step, rolled back on
   error). Reads stay outside it.
 - Photoshop enums are always `ps.constants.X` values (`constant(group, name)`), never strings.
 - Plugin errors are `fail(code, message, hint)`; `toErr` maps Photoshop's errors (`number 9` -> `BUSY`).
@@ -57,6 +57,10 @@ npm run typecheck
 - `Layer.scale(w, h, anchor)` rejects every anchor tried (`"middleCenter"`, `constants.AnchorPosition.MIDDLECENTER`):
   scale without one, then `translate` to the exact centre.
 - batchPlay echoes each descriptor back: `batch_play` keeps only `get` results and ids of layers made.
+- batchPlay does NOT throw when a descriptor fails: it returns `{_obj: "error", message, result}` in its place.
+  Every call goes through `play()` (core.ts), which fails on it; never call `ps.action.batchPlay` directly.
+- Duplicating a layer that has clipped layers above it can leave them unclipped (seen live): re-check `clip`.
+- Select Subject on a photo of leaves on black selects the whole layer; Blend If (`blendRange`) drops dark pixels.
 - `createTextLayer` ignores `name` and names the layer after its contents: set `layer.name` afterwards.
 - A fill / gradient layer made while a selection is active gets it as its mask (shapes: select, then make the layer).
 - UXP Developer Tools' Reload only picks up builds made before it; the server compares `plugin/js/build.json` with
