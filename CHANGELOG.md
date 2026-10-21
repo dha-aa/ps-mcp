@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.2
+
+- `set_layer`, `apply_filter` and `layer_ops` select their layer first: Photoshop's lock follows the selection, so
+  unlocking a layer that wasn't selected silently did nothing (and a locked layer ignores opacity). Unlock comes
+  before the other changes, lock after; the result says whether the layer is locked.
+- Rasterizing is checked: a layer that stays a smart object fails with a hint instead of the filter silently
+  becoming a smart filter.
+- New layers / groups with `above` stay at that level even when a group is selected (Photoshop nests them inside).
+
 ## 0.5.1
 
 - `layer_ops` new_layer / new_group with `above`: Photoshop puts a new pixel layer or group on top whatever is

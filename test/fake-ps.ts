@@ -125,6 +125,7 @@ export function fakePhotoshop() {
       },
       set opacity(x: number) {
         needModal("opacity");
+        if (v.allLocked) return; // live: silently ignored on a locked layer
         v.opacity = x;
       },
       get allLocked() {
@@ -132,6 +133,9 @@ export function fakePhotoshop() {
       },
       set allLocked(x: boolean) {
         needModal("allLocked");
+        // Live (PS 27.10): only takes effect when this layer is the selected one; otherwise silently nothing.
+        const doc = state.docs.find((dd) => contains(dd.layers, L as unknown as FakeLayer));
+        if (doc && doc.activeLayers[0] !== (L as unknown as FakeLayer)) return;
         v.allLocked = x;
       },
       get bounds() {
@@ -211,6 +215,7 @@ export function fakePhotoshop() {
       async rasterize(type: unknown) {
         needModal("rasterize");
         isConst(CONSTANTS.RasterizeType, type, "Constants.RasterizeType");
+        if (L.allLocked) return; // live: a locked layer is silently left as it is
         L.kind = "pixel";
       },
       filters: [] as string[],
@@ -220,6 +225,11 @@ export function fakePhotoshop() {
       "applyDustAndScratches", "applyMinimum", "applyMaximum", "applyTwirl", "applyPinch", "applyOffset", "applyClouds", "applyDespeckle"]) {
       (L as unknown as Record<string, unknown>)[m] = async (...args: unknown[]) => {
         needModal(m);
+        // Live: on a smart object the filter becomes a smart filter (no error); text etc. refuse.
+        if (L.kind === "smartObject") {
+          (L as unknown as { smartFilters: string[] }).smartFilters = [...((L as unknown as { smartFilters?: string[] }).smartFilters ?? []), m];
+          return;
+        }
         if (L.kind !== "pixel") throw new Error(`The command "${m}" is not currently available.`);
         if (m === "applyAddNoise") isConst(CONSTANTS.NoiseDistribution, args[1], "Constants.NoiseDistribution");
         (L as unknown as { filters: string[] }).filters.push(m + " " + JSON.stringify(args.filter((x) => typeof x !== "object")));
@@ -412,9 +422,11 @@ export function fakePhotoshop() {
     };
     d.createPixelLayer = async (o: { name?: string }) => {
       needModal("createPixelLayer");
-      // Live (PS 27.10): a new pixel layer goes on top, whatever is selected (text does follow the selection).
+      // Live (PS 27.10): a new pixel layer goes on top, or on top inside the selected group.
       const L = layer({ name: o.name ?? "Layer 1", box: { l: 0, t: 0, w: 0, h: 0 } });
-      d.layers.unshift(L);
+      const sel = d.activeLayers[0];
+      if (sel && sel.kind === "group") (sel.layers ??= []).unshift(L);
+      else d.layers.unshift(L);
       d.activeLayers = [L];
       return L;
     };

@@ -2,7 +2,7 @@
 // The plugin is several script files (no imports) joined in order by scripts/build-plugin.ts into
 // plugin/js/main.js; test/plugin-harness.ts runs that same file in a vm with fake Photoshop modules.
 
-const PLUGIN_VERSION = "0.5.1";
+const PLUGIN_VERSION = "0.5.2";
 const SCAN_MS = 2000;
 const RETRY_MS = 10000;
 
@@ -193,6 +193,22 @@ async function centreAt(layer: PsLayer, x: number | undefined, y: number | undef
     if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) return;
     await layer.translate(dx, dy);
   }
+}
+
+/** Selects the layer: some layer setters (allLocked) and new-layer placement follow the selection, not the layer
+ * object they are called on (seen live, PS 27.10). Inside the modal scope. */
+function selectLayer(doc: PsDocument, layer: PsLayer): void {
+  activate(doc);
+  if (doc.activeLayers.length !== 1 || doc.activeLayers[0].id !== layer.id) doc.activeLayers = [layer];
+}
+
+/** Rasterizes a layer and checks it really became pixels (a locked layer is silently left as it is). */
+async function rasterizeChecked(doc: PsDocument, layer: PsLayer): Promise<void> {
+  selectLayer(doc, layer);
+  if (layer.allLocked) layer.allLocked = false;
+  await layer.rasterize(ps.constants.RasterizeType.ENTIRELAYER);
+  const now = findLayer(doc, layer.id);
+  if (now.kind !== "pixel") fail("PS_ERROR", `Photoshop did not rasterize layer ${layer.id} (it is still ${now.kind}).`, "Check that the layer is not locked or inside a locked group.");
 }
 
 /** Photoshop's enum value for a snake_case name (soft_light -> SOFTLIGHT); fails with the valid names. */

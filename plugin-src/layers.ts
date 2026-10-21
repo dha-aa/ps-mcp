@@ -19,12 +19,15 @@ commands.set_layer = async (a) => {
     fail("BAD_ARGS", "The Background layer can't be moved, transformed or reordered.", "Duplicate it (layer_ops duplicate) and change the copy.");
   }
   return modal("set_layer", doc, async () => {
+    // Selected first (the lock follows the selection); unlocked before and locked after the other changes,
+    // which a locked layer would silently ignore.
+    selectLayer(doc, layer);
+    if (a.locked === false) layer.allLocked = false;
     if (a.name !== undefined) layer.name = a.name;
     if (a.visible !== undefined) layer.visible = a.visible === true;
     if (a.opacity !== undefined) layer.opacity = a.opacity;
     if (a.fill_opacity !== undefined) layer.fillOpacity = a.fill_opacity;
     if (a.blend !== undefined) layer.blendMode = constant("BlendMode", a.blend) as string;
-    if (a.locked !== undefined) layer.allLocked = a.locked === true;
     if (a.clip !== undefined) layer.isClippingMask = a.clip === true;
     // Transforms keep the layer's centre: Photoshop rejected every anchor value we tried (see CLAUDE.md).
     if (a.scale !== undefined || a.rotate !== undefined || a.flip !== undefined) {
@@ -50,7 +53,10 @@ commands.set_layer = async (a) => {
       const place = a.above !== undefined ? "PLACEBEFORE" : a.below !== undefined ? "PLACEAFTER" : "PLACEINSIDE";
       await layer.move(relLayer, ps.constants.ElementPlacement[place as "PLACEBEFORE"]);
     }
+    if (a.locked === true) layer.allLocked = true;
     const out = layerBrief(layer);
+    if (a.locked !== undefined && layer.allLocked !== (a.locked === true)) fail("PS_ERROR", `Photoshop did not ${a.locked ? "lock" : "unlock"} layer ${layer.id}.`);
+    if (layer.allLocked) out.locked = true;
     if (layer.opacity !== 100) out.opacity = round(layer.opacity, 1);
     if (layer.blendMode && layer.blendMode !== "normal") out.blend = layer.blendMode;
     if (!layer.visible) out.visible = false;
@@ -113,7 +119,7 @@ commands.layer_ops = async (a) => {
       }
       case "rasterize": {
         need(1);
-        for (const l of layers) await l.rasterize(ps.constants.RasterizeType.ENTIRELAYER);
+        for (const l of layers) await rasterizeChecked(doc, l);
         return { rasterized: ids };
       }
     }

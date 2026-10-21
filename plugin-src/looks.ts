@@ -40,8 +40,9 @@ commands.apply_filter = async (a) => {
     fail("BAD_ARGS", `Layer ${layer.id} is a ${layer.kind} layer; filters need pixels.`, "Pass rasterize: true to rasterize it first (smart object / text become pixels).");
   }
   return modal("apply_filter", doc, async () => {
-    activate(doc);
-    if (layer.kind !== "pixel") await layer.rasterize(ps.constants.RasterizeType.ENTIRELAYER);
+    // On a smart object Photoshop would make a smart filter without a word: rasterize first and check it worked.
+    if (layer.kind !== "pixel") await rasterizeChecked(doc, layer);
+    else selectLayer(doc, layer);
     await layer[f.method as `apply${string}`](...f.args(a));
     return { layer: layerBrief(layer), filter: a.filter };
   });

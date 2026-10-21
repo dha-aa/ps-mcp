@@ -34,6 +34,32 @@ test("set_layer: properties with Photoshop's own blend constants; strings are no
   await rejects(plugin.commands.set_layer({ layer_id: a.id, blend: "sparkly" }), "BAD_ARGS");
 });
 
+test("set_layer unlocks a layer that is not selected (the lock follows the selection) before other changes", async () => {
+  const { plugin, d, a, b } = setup();
+  d.activeLayers = [a];
+  await plugin.commands.set_layer({ layer_id: a.id, locked: true });
+  d.activeLayers = [b]; // another layer selected, as after a merge
+  const r = await plugin.commands.set_layer({ layer_id: a.id, locked: false, opacity: 30 });
+  assert.equal(a.allLocked, false, "unlocked");
+  assert.equal(a.opacity, 30, "and the opacity applied (a locked layer ignores it)");
+  assert.equal(r.locked, undefined);
+  const l = await plugin.commands.set_layer({ layer_id: a.id, opacity: 60, locked: true });
+  assert.deepEqual([a.opacity, a.allLocked, l.locked], [60, true, true], "opacity before the lock");
+});
+
+test("apply_filter rasterizes a locked smart object for real instead of making a smart filter", async () => {
+  const { plugin, d, b, layer } = setup();
+  const so = layer({ name: "Smart", kind: "smartObject", box: { l: 0, t: 0, w: 10, h: 10 } });
+  d.layers.unshift(so);
+  d.activeLayers = [so];
+  await plugin.commands.set_layer({ layer_id: so.id, locked: true });
+  d.activeLayers = [b];
+  const r = await plugin.commands.apply_filter({ layer_id: so.id, filter: "gaussian_blur", radius: 2, rasterize: true });
+  assert.equal(r.layer.kind, "pixel");
+  assert.equal(so.smartFilters, undefined, "no smart filter");
+  assert.deepEqual(so.filters, ["applyGaussianBlur [2]"]);
+});
+
 test("set_layer: scale and rotate keep the centre (Photoshop's own anchor can't be trusted); x,y and dx,dy move", async () => {
   const { plugin, a } = setup();
   const before = centre([a.bounds.left, a.bounds.top, a.bounds.right, a.bounds.bottom]);
@@ -149,6 +175,11 @@ test("new layers go above the selected layer unless above is given (seen live: a
   assert.equal(d.layers[d.layers.length - 2].id, n.layer.id);
   const g = await plugin.commands.layer_ops({ op: "new_group", name: "G", above: t1.layer.id });
   assert.equal(d.layers[d.layers.findIndex((l) => l.id === t1.layer.id) - 1].id, g.layer.id);
+  // With the group selected Photoshop would nest the new layer inside it; above puts it where asked.
+  d.activeLayers = [d.layers.find((l) => l.id === g.layer.id)!];
+  const p = await plugin.commands.layer_ops({ op: "new_layer", name: "P", above: a.id });
+  assert.equal(d.layers[d.layers.findIndex((l) => l.id === a.id) - 1].id, p.layer.id, "top level, just above A");
+  assert.ok(!d.layers.find((l) => l.id === g.layer.id)!.layers!.some((l) => l.id === p.layer.id), "not inside the group");
   void t2;
 });
 

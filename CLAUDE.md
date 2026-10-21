@@ -70,6 +70,10 @@ npm run typecheck
 - `createPixelLayer` / `createLayerGroup` put the new layer on top whatever is selected (`createTextLayer` and fill
   layers follow the selection): `layer_ops` moves it when `above` is given.
 - Selection bounds are clipped to the canvas.
+- `layer.allLocked` only takes effect on the SELECTED layer (otherwise silently nothing); a locked layer silently
+  ignores opacity and is not rasterized; a filter on a smart object becomes a smart filter without an error.
+  Commands that change a layer call `selectLayer` first; `rasterizeChecked` verifies the result.
+- A new pixel layer / group goes inside the selected group (on top of it), else on top of the document.
 - New layers go above the selected layer; a layer moved down stays selected, so later layers land under what is
   above it. Tools that make layers take `above`; the server instructions tell the model.
 - Adjustment descriptors (levels, curves, hue/sat, brightness/contrast, black & white) store exactly what
