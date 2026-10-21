@@ -2,7 +2,7 @@
 // The plugin is several script files (no imports) joined in order by scripts/build-plugin.ts into
 // plugin/js/main.js; test/plugin-harness.ts runs that same file in a vm with fake Photoshop modules.
 
-const PLUGIN_VERSION = "0.4.0";
+const PLUGIN_VERSION = "0.4.1";
 const SCAN_MS = 2000;
 const RETRY_MS = 10000;
 
@@ -173,7 +173,8 @@ async function centreAt(layer: PsLayer, x: number | undefined, y: number | undef
 
 /** Photoshop's enum value for a snake_case name (soft_light -> SOFTLIGHT); fails with the valid names. */
 function constant(group: keyof PsConstants, name: string): unknown {
-  const table = ps.constants[group] as Record<string, unknown>;
+  const table = ps.constants[group] as Record<string, unknown> | undefined;
+  if (!table) fail("UNSUPPORTED", `This Photoshop has no constants.${group}.`, "Use batch_play for this, and report it: the tool needs updating.");
   const key = String(name).replace(/_/g, "").toUpperCase();
   if (!(key in table)) fail("BAD_ARGS", `Unknown ${group} "${name}".`, "Valid: " + Object.keys(table).map((k) => k.toLowerCase()).join(", "));
   return table[key];

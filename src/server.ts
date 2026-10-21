@@ -12,6 +12,8 @@ import { ToolRegistry } from "./tools/registry.ts";
 
 export const SERVER_INSTRUCTIONS = `Controls a live Adobe Photoshop through its MCP panel (Plugins > Photoshop MCP).
 Start with get_document: it lists open documents and the active one's layer tree (ids, kinds, bounds).
+Stacking: a new layer goes above the selected layer, which is the last one made or changed (moving a layer down
+keeps it selected); pass above: <layer id> to place it, and check the order in get_document.
 Units: pixels, x right and y down from the canvas's top-left; opacity 0-100; colours [r,g,b] 0-1. Layers and documents by numeric id.
 Reference images: an image shown in the chat does not reach this server. Use its file path (place_image / open_image path), or pass base64 bytes as data. To recreate a reference: open_image it or create_document at its size, place it as a locked layer at low opacity to build over, then compare with preview often.
 Errors are {error:{code,message,hint}}: follow the hint.`;

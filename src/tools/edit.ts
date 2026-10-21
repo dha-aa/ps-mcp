@@ -23,6 +23,7 @@ export function registerEditTools(r: ToolRegistry): void {
     z.strictObject({
       document_id: docId.optional(),
       layer_id: z.number().int().optional().describe("Text layer to edit"),
+      above: z.number().int().optional().describe("New text: put it above this layer (default: above the selected layer)"),
       text: z.string().optional(),
       font: z.string().min(1).optional(),
       size: z.number().min(0.1).max(5000).optional(),

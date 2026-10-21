@@ -34,7 +34,12 @@ commands.set_layer = async (a) => {
         await layer.scale(w, h);
       }
       if (a.rotate) await layer.rotate(a.rotate);
-      if (a.flip) await layer.flip(constant("FlipAxis", a.flip));
+      // Photoshop 27.10 has no constants.FlipAxis (the docs list it): flip with Edit > Transform's descriptor.
+      if (a.flip) {
+        for (const axis of a.flip === "both" ? ["horizontal", "vertical"] : [a.flip]) {
+          await ps.action.batchPlay([{ _obj: "flip", _target: [{ _ref: "layer", _id: layer.id }], axis: { _enum: "orientation", _value: axis } }], { modalBehavior: "execute" });
+        }
+      }
       if (a.x === undefined && a.y === undefined) await centreAt(layer, c.x, c.y);
     }
     if (a.x !== undefined || a.y !== undefined) await centreAt(layer, a.x, a.y);
@@ -60,8 +65,10 @@ commands.layer_ops = async (a) => {
   const need = (n: number) => {
     if (layers.length < n) fail("BAD_ARGS", `${a.op} needs ${n === 1 ? "a layer" : "at least " + n + " layers"} in layer_ids.`);
   };
+  const above = a.above !== undefined ? findLayer(doc, a.above) : null;
   return modal("layer_ops " + a.op, doc, async () => {
     activate(doc);
+    if (above) doc.activeLayers = [above];
     switch (a.op) {
       case "new_layer": {
         const l = await doc.createPixelLayer({ name: a.name });

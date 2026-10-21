@@ -120,6 +120,38 @@ test("history: each command is one state; undo, redo and go move through them", 
   assert.equal((await plugin.commands.history({ op: "list" })).states.length, 3, "moving in history adds no state");
 });
 
+test("history acts on its own document even when another one is active (Photoshop answers for the active one)", async () => {
+  const { plugin, a, d, addDoc, state } = setup();
+  await plugin.commands.set_layer({ layer_id: a.id, opacity: 50 });
+  const other = addDoc({ title: "Other", width: 10, height: 10 }); // now the active document
+  assert.equal(state.active, other);
+  const l = await plugin.commands.history({ document_id: d.id, op: "list" });
+  assert.deepEqual(l.states.map((s: { name: string }) => s.name), ["Open", "MCP set_layer"]);
+  await plugin.commands.history({ document_id: d.id, op: "undo" });
+  assert.equal(d.ownActive.name, "Open", "undo happened in D");
+  assert.equal(other.ownActive.name, "Open", "and not in the other document");
+});
+
+test("set_layer flip goes through Photoshop's flip descriptor (no constants.FlipAxis in Photoshop 27.10)", async () => {
+  const { plugin, a, state } = setup();
+  await plugin.commands.set_layer({ layer_id: a.id, flip: "both" });
+  assert.deepEqual(state.calls.filter((c) => c.startsWith("flip")), ["flip horizontal", "flip vertical"]);
+});
+
+test("new layers go above the selected layer unless above is given (seen live: a moved-down layer stays selected)", async () => {
+  const { plugin, d, a, b, bg } = setup();
+  d.activeLayers = [b];
+  const t1 = await plugin.commands.set_text({ text: "x", size: 10 });
+  assert.deepEqual(d.layers.map((l) => l.name), ["A", "x", "B", "Background"], "above the selected layer");
+  const t2 = await plugin.commands.set_text({ text: "y", size: 10, above: a.id, name: "Y" });
+  assert.deepEqual(d.layers.map((l) => l.name), ["Y", "A", "x", "B", "Background"]);
+  const n = await plugin.commands.layer_ops({ op: "new_layer", name: "Low", above: bg.id });
+  assert.equal(d.layers[d.layers.length - 2].id, n.layer.id);
+  const g = await plugin.commands.layer_ops({ op: "new_group", name: "G", above: t1.layer.id });
+  assert.equal(d.layers[d.layers.findIndex((l) => l.id === t1.layer.id) - 1].id, g.layer.id);
+  void t2;
+});
+
 test("apply_filter: runs on pixels; other kinds need rasterize; required parameters checked", async () => {
   const { plugin, a, d, layer } = setup();
   await plugin.commands.apply_filter({ layer_id: a.id, filter: "gaussian_blur", radius: 4 });

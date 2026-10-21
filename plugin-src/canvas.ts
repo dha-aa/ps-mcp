@@ -42,24 +42,32 @@ commands.canvas = async (a) => {
 
 commands.history = async (a) => {
   const doc = findDoc(a.document_id);
-  const states = Array.from(doc.historyStates);
-  const cur = states.findIndex((s) => s.id === doc.activeHistoryState.id);
-  const list = () => {
-    const limit = a.limit ?? 20;
-    const from = Math.max(0, states.length - limit);
-    return states.slice(from).map((s, i) => (from + i === cur ? { id: s.id, name: s.name, current: true } : { id: s.id, name: s.name }));
-  };
-  if (a.op === "list") return { states: list(), total: states.length };
-  let target = cur;
-  if (a.op === "undo") target = cur - (a.steps ?? 1);
-  else if (a.op === "redo") target = cur + (a.steps ?? 1);
-  else if (a.op === "go") target = states.findIndex((s) => s.id === a.state_id);
-  if (target < 0 || target >= states.length) {
-    fail("BAD_ARGS", a.op === "go" ? `No history state ${a.state_id}.` : `Can't ${a.op} ${a.steps ?? 1} step(s): ${cur} before and ${states.length - 1 - cur} after the current state.`, "history op list shows the states.");
-  }
-  // Moving in history needs the modal scope but must not become a history step itself.
-  await modal("history", null, async () => {
+  // Photoshop 27.10 answers historyStates / activeHistoryState for the ACTIVE document, whichever document they
+  // are read from: activate this one first, or undo would act on another document. No history step of its own.
+  return modal("history", null, async () => {
+    activate(doc);
+    const states = Array.from(doc.historyStates);
+    const cur = states.findIndex((s) => s.id === doc.activeHistoryState.id);
+    if (a.op === "list") {
+      const limit = a.limit ?? 20;
+      const from = Math.max(0, states.length - limit);
+      return {
+        states: states.slice(from).map((s, i) => (from + i === cur ? { id: s.id, name: s.name, current: true } : { id: s.id, name: s.name })),
+        total: states.length,
+      };
+    }
+    let target = cur;
+    if (a.op === "undo") target = cur - (a.steps ?? 1);
+    else if (a.op === "redo") target = cur + (a.steps ?? 1);
+    else if (a.op === "go") target = states.findIndex((s) => s.id === a.state_id);
+    if (target < 0 || target >= states.length) {
+      fail(
+        "BAD_ARGS",
+        a.op === "go" ? `No history state ${a.state_id}.` : `Can't ${a.op} ${a.steps ?? 1} step(s): ${cur} before and ${states.length - 1 - cur} after the current state.`,
+        "history op list shows the states.",
+      );
+    }
     doc.activeHistoryState = states[target];
+    return { current: { id: states[target].id, name: states[target].name } };
   });
-  return { current: { id: states[target].id, name: states[target].name } };
 };

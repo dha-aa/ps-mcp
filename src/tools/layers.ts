@@ -49,6 +49,7 @@ export function registerLayerTools(r: ToolRegistry): void {
       op: z.enum(["new_layer", "new_group", "duplicate", "delete", "group", "merge", "rasterize"]),
       layer_ids: z.array(z.number().int()).optional(),
       name: z.string().min(1).optional(),
+      above: z.number().int().optional().describe("new_layer / new_group: put it above this layer (default: above the selected layer)"),
     }),
   );
 

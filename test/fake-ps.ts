@@ -171,10 +171,8 @@ export function fakePhotoshop() {
         state.calls.push(`rotate ${angle}`);
         if (Math.abs(angle) % 180 === 90) L.box = { l: L.box.l, t: L.box.t, w: L.box.h, h: L.box.w };
       },
-      async flip(axis: unknown) {
-        needModal("flip");
-        isConst(CONSTANTS.FlipAxis, axis, "Constants.FlipAxis");
-        state.calls.push("flip " + (axis as { k: string }).k);
+      async flip() {
+        throw new Error("Cannot read properties of undefined (FlipAxis)");
       },
       async move(rel: FakeLayer, placement: unknown) {
         needModal("move");
@@ -364,7 +362,7 @@ export function fakePhotoshop() {
       needModal("createTextLayer");
       if (o.textColor !== undefined && !(o.textColor instanceof SolidColor)) throw new Error("textColor must be a SolidColor");
       const L = textLayer(d, o);
-      d.layers.unshift(L);
+      d.layers.splice(Math.max(0, d.activeLayers[0] ? d.layers.indexOf(d.activeLayers[0]) : 0), 0, L);
       d.activeLayers = [L];
       return L;
     };
@@ -415,7 +413,7 @@ export function fakePhotoshop() {
     d.createPixelLayer = async (o: { name?: string }) => {
       needModal("createPixelLayer");
       const L = layer({ name: o.name ?? "Layer 1", box: { l: 0, t: 0, w: 0, h: 0 } });
-      d.layers.unshift(L);
+      d.layers.splice(Math.max(0, d.activeLayers[0] ? d.layers.indexOf(d.activeLayers[0]) : 0), 0, L);
       d.activeLayers = [L];
       return L;
     };
@@ -423,25 +421,30 @@ export function fakePhotoshop() {
       needModal("createLayerGroup");
       const L = layer({ name: o.name ?? "Group 1", kind: "group", box: { l: 0, t: 0, w: 0, h: 0 } });
       L.layers = [];
-      d.layers.unshift(L);
+      d.layers.splice(Math.max(0, d.activeLayers[0] ? d.layers.indexOf(d.activeLayers[0]) : 0), 0, L);
+      d.activeLayers = [L];
       return L;
     };
-    d.historyStates = [{ id: nextId++, name: "Open", snapshot: false }];
-    let active = d.historyStates[0];
+    // Live (PS 27.10): historyStates and activeHistoryState answer for the ACTIVE document, whichever document
+    // they are read from. The real states live in ownStates.
+    d.ownStates = [{ id: nextId++, name: "Open", snapshot: false }];
+    d.ownActive = d.ownStates[0];
+    Object.defineProperty(d, "historyStates", { get: () => (state.active ?? d).ownStates });
     Object.defineProperty(d, "activeHistoryState", {
-      get: () => active,
+      get: () => (state.active ?? d).ownActive,
       set: (s: { id: number }) => {
         needModal("activeHistoryState");
-        const found = d.historyStates.find((x: { id: number }) => x.id === s.id);
+        const doc = state.active ?? d;
+        const found = doc.ownStates.find((x: { id: number }) => x.id === s.id);
         if (!found) throw new Error("no such history state");
-        active = found;
+        doc.ownActive = found;
       },
     });
     /** A committed history step (called by the fake resumeHistory). */
     d.commitState = (name: string) => {
       const s = { id: nextId++, name, snapshot: false };
-      d.historyStates = d.historyStates.slice(0, d.historyStates.indexOf(active) + 1).concat([s]);
-      active = s;
+      d.ownStates = d.ownStates.slice(0, d.ownStates.indexOf(d.ownActive) + 1).concat([s]);
+      d.ownActive = s;
     };
   }
 
@@ -601,6 +604,13 @@ export function fakePhotoshop() {
             if (sel) doc.masks[L.id] = [sel.left, sel.top, sel.right, sel.bottom];
             doc.activeLayers = [L];
             out.push({ ...d, layerID: L.id });
+          } else if (d._obj === "flip") {
+            needModal("flip");
+            const L = state.docs.flatMap((x) => x.layers).find((x) => x.id === d._target[0]._id);
+            if (!L) throw new Error("no such layer");
+            if (d.axis?._enum !== "orientation" || !["horizontal", "vertical"].includes(d.axis._value)) throw new Error("bad flip axis");
+            state.calls.push("flip " + d.axis._value);
+            out.push({});
           } else if (d._obj === "mergeLayersNew") {
             needModal("mergeLayersNew");
             const doc = state.active!;
@@ -729,7 +739,7 @@ const CONSTANTS = {
      "lighterColor", "overlay", "softLight", "hardLight", "vividLight", "linearLight", "pinLight", "hardMix", "difference", "exclusion",
      "subtract", "divide", "hue", "saturation", "color", "luminosity", "passThrough"].map((m) => [m.toUpperCase(), m]),
   ),
-  FlipAxis: enumOf("FlipAxis", ["HORIZONTAL", "VERTICAL", "BOTH"]),
+  // Live (PS 27.10): constants.FlipAxis does not exist, although the docs list it.
   ElementPlacement: enumOf("ElementPlacement", ["PLACEBEFORE", "PLACEAFTER", "PLACEINSIDE", "PLACEATBEGINNING", "PLACEATEND"]),
   RasterizeType: enumOf("RasterizeType", ["ENTIRELAYER"]),
   TrimType: enumOf("TrimType", ["TRANSPARENT", "TOPLEFT", "BOTTOMRIGHT"]),

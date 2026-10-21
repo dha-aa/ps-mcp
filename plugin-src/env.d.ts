@@ -32,7 +32,6 @@ interface PsLayer {
   isClippingMask: boolean;
   scale(width: number, height: number): Promise<void>;
   rotate(angle: number): Promise<void>;
-  flip(axis: unknown): Promise<void>;
   move(relative: PsLayer, placement: unknown): Promise<void>;
   bringToFront(): Promise<void>;
   sendToBack(): Promise<void>;
@@ -131,7 +130,6 @@ interface PsConstants {
   Justification: Record<"LEFT" | "CENTER" | "RIGHT", unknown>;
   SelectionType: Record<"REPLACE" | "EXTEND" | "DIMINISH" | "INTERSECT", unknown>;
   BlendMode: Record<string, unknown>;
-  FlipAxis: Record<"HORIZONTAL" | "VERTICAL" | "BOTH", unknown>;
   ElementPlacement: Record<"PLACEBEFORE" | "PLACEAFTER" | "PLACEINSIDE" | "PLACEATBEGINNING" | "PLACEATEND", unknown>;
   RasterizeType: Record<"ENTIRELAYER", unknown>;
   TrimType: Record<"TRANSPARENT" | "TOPLEFT" | "BOTTOMRIGHT", unknown>;

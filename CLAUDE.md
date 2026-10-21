@@ -58,3 +58,10 @@ npm run typecheck
 - The sandbox's temp folder is the server's `os.tmpdir()` (macOS `/var/folders/...`), not `/private/tmp`.
 - After a text change (size, contents) a layer's `bounds` stay stale until it moves: `centreAt` re-reads and corrects.
 - Docs pages escape markup (`\<span ...\>`, `\<br/\>`) and wrap types as `` `<void>` ``: `clean()` (src/docs.ts) handles both.
+- `constants.FlipAxis` does not exist (the docs list it): flip with the `flip` action descriptor (`set_layer`).
+- `Document.historyStates` / `activeHistoryState` answer for the ACTIVE document, whichever document they are read
+  from: `history` activates its document first, or undo would act on another document.
+- New layers go above the selected layer; a layer moved down stays selected, so later layers land under what is
+  above it. Tools that make layers take `above`; the server instructions tell the model.
+- Adjustment descriptors (levels, curves, hue/sat, brightness/contrast, black & white) store exactly what
+  `add_adjustment` sends (read back live with batch_play `get`).
