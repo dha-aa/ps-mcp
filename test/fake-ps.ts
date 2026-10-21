@@ -512,6 +512,7 @@ export function fakePhotoshop() {
       },
       async open(entry: { nativePath: string }) {
         needModal("open");
+        if (/unreadable/.test(entry.nativePath)) return undefined; // live: a file Photoshop can't read opens nothing
         const s = sizeOf(entry.nativePath);
         return addDoc({ title: entry.nativePath.split("/").pop()!, width: s.width, height: s.height, path: entry.nativePath });
       },
@@ -569,6 +570,10 @@ export function fakePhotoshop() {
             const doc = state.active!;
             const path = tokens.get(d.null._path);
             if (!path) throw new Error("invalid session token");
+            if (/unreadable/.test(path)) {
+              out.push({}); // live: a file Photoshop can't read places nothing, without an error
+              continue;
+            }
             const s = sizeOf(path);
             let w = s.width;
             let h = s.height;

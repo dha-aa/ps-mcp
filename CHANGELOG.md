@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3
+
+- `place_image` finds the placed layer by comparing layer ids, and fails if none appeared: Photoshop places nothing,
+  without an error, for a file it can't read (seen live with an Unsplash JPEG), and the selected layer used to be
+  moved, scaled and renamed as if it were the image. `open_image` fails clearly too. The hint says how to re-save.
+
 ## 0.5.2
 
 - `set_layer`, `apply_filter` and `layer_ops` select their layer first: Photoshop's lock follows the selection, so

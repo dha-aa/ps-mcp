@@ -177,6 +177,20 @@ test("batch_play: one undo step, results returned, a failing descriptor rolls ba
   await rejects(plugin.commands.batch_play({ descriptors: [{ _obj: "make" }], document_id: 999 }), "NOT_FOUND");
 });
 
+test("a file Photoshop can't read: place_image and open_image fail clearly and touch no other layer", async () => {
+  const { plugin, addDoc, state, layer } = loadPlugin();
+  const sel = layer({ name: "Selected", box: { l: 10, t: 10, w: 50, h: 50 } });
+  const d = addDoc({ title: "D", width: 100, height: 100, layers: [sel] });
+  d.activeLayers = [sel];
+  const bad = writePng(join(dir, "unreadable.png"), 300, 300);
+  const e = await rejects(plugin.commands.place_image({ path: bad, fit: "contain", name: "X", source_width: 300, source_height: 300 }), "PS_ERROR");
+  assert.match(e.message, /did not place/);
+  assert.match(e.hint, /sips/);
+  assert.deepEqual([sel.name, sel.box], ["Selected", { l: 10, t: 10, w: 50, h: 50 }], "the selected layer was not moved, scaled or renamed");
+  assert.ok(!state.calls.some((c) => c.startsWith("scale") || c.startsWith("translate")));
+  await rejects(plugin.commands.open_image({ path: bad }), "PS_ERROR");
+});
+
 test("preview: shrinks to max_edge, never enlarges, layer bounds", async () => {
   const { plugin, addDoc, state, layer } = loadPlugin();
   const L = layer({ name: "Box", box: { l: 10, t: 20, w: 300, h: 600 } });

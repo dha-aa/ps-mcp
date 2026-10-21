@@ -73,6 +73,8 @@ npm run typecheck
 - `layer.allLocked` only takes effect on the SELECTED layer (otherwise silently nothing); a locked layer silently
   ignores opacity and is not rasterized; a filter on a smart object becomes a smart filter without an error.
   Commands that change a layer call `selectLayer` first; `rasterizeChecked` verifies the result.
+- A file Photoshop can't read (an Unsplash JPEG macOS opens fine) is placed as nothing and opened as undefined,
+  with no error: `place_image` finds its layer by new id, `open_image` checks the document; re-saving fixes it.
 - A new pixel layer / group goes inside the selected group (on top of it), else on top of the document.
 - New layers go above the selected layer; a layer moved down stays selected, so later layers land under what is
   above it. Tools that make layers take `above`; the server instructions tell the model.

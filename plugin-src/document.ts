@@ -26,14 +26,27 @@ commands.create_document = async (a) => {
 commands.open_image = async (a) => {
   const entry = await fileEntry(a.path);
   const d = await modal("open_image", null, () => ps.app.open(entry));
+  // Photoshop returns nothing for a file it can't read (seen live with a JPEG macOS opens fine).
+  if (!d || typeof d.id !== "number") fail("PS_ERROR", `Photoshop could not open ${a.path}.`, UNREADABLE_HINT);
   return { document: docBrief(d) };
 };
+
+const UNREADABLE_HINT = "Photoshop can't read this file. Re-save it as PNG or a standard JPEG (macOS: sips -s format png <file> --out <new>.png) and use the copy.";
+
+/** Every layer id in the document, nested ones included. */
+function layerIds(doc: PsDocument): Set<number> {
+  const ids = new Set<number>();
+  const walk = (ls: PsLayer[]) => ls.forEach((l) => (ids.add(l.id), l.layers && walk(l.layers)));
+  walk(doc.layers);
+  return ids;
+}
 
 commands.place_image = async (a) => {
   const doc = findDoc(a.document_id);
   const entry = await fileEntry(a.path);
   return modal("place_image", doc, async () => {
     activate(doc);
+    const before = layerIds(doc);
     const token = uxp.storage.localFileSystem.createSessionToken(entry);
     await ps.action.batchPlay(
       [
@@ -46,8 +59,10 @@ commands.place_image = async (a) => {
       ],
       {},
     );
-    const layer = doc.activeLayers[0];
-    if (!layer) fail("PS_ERROR", "The image was placed but no layer is selected.");
+    // The placed layer is the new one, never just "the selected layer": a file Photoshop can't read places nothing,
+    // and the selected layer would then be moved and scaled as if it were the image (seen live).
+    const layer = doc.activeLayers.find((l) => !before.has(l.id)) ?? Array.from(layerIds(doc)).filter((id) => !before.has(id)).map((id) => findLayer(doc, id))[0];
+    if (!layer) fail("PS_ERROR", `Photoshop did not place ${a.path}: no new layer appeared.`, UNREADABLE_HINT);
 
     // Size: Photoshop may already have scaled it (preferences, ppi), so compute from what is there now.
     const cur = await placedBox(doc, layer);
