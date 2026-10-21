@@ -182,6 +182,7 @@ export function fakePhotoshop() {
         isConst(CONSTANTS.ElementPlacement, placement, "Constants.ElementPlacement");
         const doc = docOf(L);
         const p = (placement as { k: string }).k;
+        if (L.isClippingMask) L.isClippingMask = false; // live: moving releases the clip
         doc.layers.splice(doc.layers.indexOf(L), 1);
         if (p === "PLACEINSIDE") (rel.layers ??= []).unshift(L);
         else doc.layers.splice(doc.layers.indexOf(rel) + (p === "PLACEAFTER" ? 1 : 0), 0, L);

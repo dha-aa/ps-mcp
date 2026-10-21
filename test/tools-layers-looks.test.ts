@@ -67,6 +67,34 @@ test("apply_filter rasterizes a locked smart object for real instead of making a
   assert.deepEqual(so.filters, ["applyGaussianBlur [2]"]);
 });
 
+test("set_layer above / below keeps a clipped layer clipped (moving releases the clip in Photoshop)", async () => {
+  const { plugin, d, a, b } = setup();
+  const c = await plugin.commands.add_adjustment({ type: "curves", clip: true, above: b.id });
+  const L = d.layers.find((l) => l.id === c.layer.id)!;
+  assert.equal(L.isClippingMask, true);
+  await plugin.commands.set_layer({ layer_id: c.layer.id, above: a.id });
+  assert.equal(L.isClippingMask, true, "still clipped after the move");
+  await plugin.commands.set_layer({ layer_id: c.layer.id, below: a.id, clip: false });
+  assert.equal(L.isClippingMask, false, "unless the call unclips it");
+});
+
+test("set_style bevel and gradient overlay (metal type); spread is a percentage", async () => {
+  const { plugin, a } = setup();
+  const r = await plugin.commands.set_style({
+    layer_id: a.id,
+    gradient_overlay: { colors: [{ color: [1, 0.9, 0.6] }, { color: [0.6, 0.3, 0.05] }], angle: 90 },
+    bevel: { size: 7, depth: 160, angle: 120, altitude: 35, style: "inner", technique: "chisel" },
+    drop_shadow: { size: 0, spread: 100, distance: 10, opacity: 100, blend: "normal" },
+  });
+  assert.deepEqual(r.effects, ["drop_shadow", "bevel", "gradient_overlay"]);
+  assert.equal(a.effects.bevelEmboss.strengthRatio._value, 160);
+  assert.equal(a.effects.bevelEmboss.bevelTechnique._value, "preciseMatte");
+  assert.equal(a.effects.gradientFill.gradient.colors.length, 2);
+  assert.deepEqual(a.effects.dropShadow.chokeMatte, { _unit: "percentUnit", _value: 100 });
+  const off = await plugin.commands.set_style({ layer_id: a.id, bevel: false });
+  assert.deepEqual(off.effects, ["drop_shadow", "gradient_overlay"]);
+});
+
 test("set_layer clip: no change when it already is as asked (Photoshop throws on that)", async () => {
   const { plugin, a } = setup();
   await plugin.commands.set_layer({ layer_id: a.id, clip: false });

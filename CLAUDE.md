@@ -59,7 +59,8 @@ npm run typecheck
 - batchPlay echoes each descriptor back: `batch_play` keeps only `get` results and ids of layers made.
 - batchPlay does NOT throw when a descriptor fails: it returns `{_obj: "error", message, result}` in its place.
   Every call goes through `play()` (core.ts), which fails on it; never call `ps.action.batchPlay` directly.
-- Duplicating a layer that has clipped layers above it can leave them unclipped (seen live): re-check `clip`.
+- Duplicating a layer that has clipped layers above it can leave them unclipped, and moving a clipped layer releases
+  its clip (seen live): `set_layer` re-clips after a move.
 - Select Subject on a photo of leaves on black selects the whole layer; Blend If (`blendRange`) drops dark pixels.
 - `createTextLayer` ignores `name` and names the layer after its contents: set `layer.name` afterwards.
 - A fill / gradient layer made while a selection is active gets it as its mask (shapes: select, then make the layer).

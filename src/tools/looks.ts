@@ -104,7 +104,7 @@ export function registerLookTools(r: ToolRegistry): void {
     {
       title: "Set style",
       description:
-        "Sets layer effects (layer styles), keeping the others: stroke, drop_shadow, outer_glow, inner_glow, color_overlay. false turns one off; clear: true turns off every effect not given. Sizes in px, angle in degrees.",
+        "Sets layer effects (layer styles), keeping the others: stroke, drop_shadow, outer_glow, inner_glow, color_overlay, bevel, gradient_overlay. false turns one off; clear: true turns off every effect not given. Sizes in px, angles in degrees, spread %. Metal type: gradient_overlay + bevel + a drop_shadow with size 0, spread 100 as a solid extrusion.",
     },
     z.strictObject({
       document_id: docId.optional(),
@@ -114,6 +114,17 @@ export function registerLookTools(r: ToolRegistry): void {
       outer_glow: effect({ size, spread: size }),
       inner_glow: effect({ size, spread: size }),
       color_overlay: effect({}),
+      bevel: z
+        .union([z.literal(false), z.strictObject({
+          style: z.enum(["inner", "outer", "emboss", "pillow"]).optional(), technique: z.enum(["smooth", "chisel"]).optional(),
+          size: z.number().min(0).max(250).optional(), depth: z.number().min(1).max(1000).optional().describe("%"),
+          angle: z.number().optional(), altitude: z.number().min(0).max(90).optional(), soften: z.number().min(0).max(16).optional(),
+          highlight: rgb.optional(), shadow: rgb.optional(), opacity: z.number().min(0).max(100).optional(),
+        })])
+        .optional(),
+      gradient_overlay: z
+        .union([z.literal(false), z.strictObject({ colors: stops, angle: z.number().optional(), gradient: z.enum(["linear", "radial", "angle", "reflected", "diamond"]).optional(), scale: z.number().min(10).max(150).optional(), opacity: z.number().min(0).max(100).optional(), blend: z.enum(["normal", "multiply", "screen", "overlay", "soft_light", "color_dodge", "linear_dodge"]).optional() })])
+        .optional(),
       clear: z.boolean().optional(),
     }),
   );

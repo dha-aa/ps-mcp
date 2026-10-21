@@ -162,17 +162,38 @@ function effectDesc(kind: string, e: Args): [string, object] {
     case "stroke":
       return ["frameFX", { _obj: "frameFX", ...base, style: { _enum: "frameStyle", _value: (e.position ?? "outside") + "Frame" }, paintType: { _enum: "frameFill", _value: "solidColor" }, size: pxDesc(e.size ?? 4), color: rgbDesc(e.color ?? [1, 1, 1]) }];
     case "drop_shadow":
-      return ["dropShadow", { _obj: "dropShadow", ...base, color: rgbDesc(e.color ?? [0, 0, 0]), useGlobalAngle: false, localLightingAngle: { _unit: "angleUnit", _value: e.angle ?? 90 }, distance: pxDesc(e.distance ?? 8), chokeMatte: pxDesc(e.spread ?? 0), blur: pxDesc(e.size ?? 20), noise: pctDesc(0), antiAlias: false }];
+      return ["dropShadow", { _obj: "dropShadow", ...base, color: rgbDesc(e.color ?? [0, 0, 0]), useGlobalAngle: false, localLightingAngle: { _unit: "angleUnit", _value: e.angle ?? 90 }, distance: pxDesc(e.distance ?? 8), chokeMatte: pctDesc(e.spread ?? 0), blur: pxDesc(e.size ?? 20), noise: pctDesc(0), antiAlias: false }];
     case "outer_glow":
-      return ["outerGlow", { _obj: "outerGlow", ...base, color: rgbDesc(e.color ?? [1, 1, 1]), technique: { _enum: "bevelTechnique", _value: "softMatte" }, chokeMatte: pxDesc(e.spread ?? 0), blur: pxDesc(e.size ?? 30), noise: pctDesc(0), shadingNoise: pctDesc(0), antiAlias: false, inputRange: pctDesc(50) }];
+      return ["outerGlow", { _obj: "outerGlow", ...base, color: rgbDesc(e.color ?? [1, 1, 1]), technique: { _enum: "bevelTechnique", _value: "softMatte" }, chokeMatte: pctDesc(e.spread ?? 0), blur: pxDesc(e.size ?? 30), noise: pctDesc(0), shadingNoise: pctDesc(0), antiAlias: false, inputRange: pctDesc(50) }];
     case "inner_glow":
-      return ["innerGlow", { _obj: "innerGlow", ...base, color: rgbDesc(e.color ?? [1, 1, 1]), technique: { _enum: "bevelTechnique", _value: "softMatte" }, innerGlowSource: { _enum: "innerGlowSourceType", _value: "edgeGlow" }, chokeMatte: pxDesc(e.spread ?? 0), blur: pxDesc(e.size ?? 20), noise: pctDesc(0), shadingNoise: pctDesc(0), antiAlias: false, inputRange: pctDesc(50) }];
+      return ["innerGlow", { _obj: "innerGlow", ...base, color: rgbDesc(e.color ?? [1, 1, 1]), technique: { _enum: "bevelTechnique", _value: "softMatte" }, innerGlowSource: { _enum: "innerGlowSourceType", _value: "edgeGlow" }, chokeMatte: pctDesc(e.spread ?? 0), blur: pxDesc(e.size ?? 20), noise: pctDesc(0), shadingNoise: pctDesc(0), antiAlias: false, inputRange: pctDesc(50) }];
+    case "bevel":
+      return ["bevelEmboss", {
+        _obj: "bevelEmboss", enabled: true, present: true, showInDialog: true,
+        highlightMode: blendDesc("screen"), highlightColor: rgbDesc(e.highlight ?? [1, 1, 1]), highlightOpacity: pctDesc(e.opacity ?? 75),
+        shadowMode: blendDesc("multiply"), shadowColor: rgbDesc(e.shadow ?? [0, 0, 0]), shadowOpacity: pctDesc(e.opacity ?? 75),
+        bevelTechnique: { _enum: "bevelTechnique", _value: e.technique === "smooth" ? "softMatte" : "preciseMatte" },
+        bevelStyle: { _enum: "bevelEmbossStyle", _value: ({ inner: "innerBevel", outer: "outerBevel", emboss: "emboss", pillow: "pillowEmboss" } as Record<string, string>)[e.style ?? "inner"] },
+        useGlobalAngle: false, localLightingAngle: { _unit: "angleUnit", _value: e.angle ?? 120 }, localLightingAltitude: { _unit: "angleUnit", _value: e.altitude ?? 30 },
+        strengthRatio: pctDesc(e.depth ?? 100), blur: pxDesc(e.size ?? 5), bevelDirection: { _enum: "bevelEmbossStampStyle", _value: "stampIn" },
+        transferSpec: { _obj: "shapeCurveType", name: "Linear" }, antialiasGloss: true, softness: pxDesc(e.soften ?? 0), useShape: false, useTexture: false,
+      }];
+    case "gradient_overlay":
+      return ["gradientFill", {
+        _obj: "gradientFill", ...base,
+        gradient: (gradientDesc({ colors: e.colors }, "Overlay") as { gradient: object }).gradient,
+        angle: { _unit: "angleUnit", _value: e.angle ?? 90 }, type: { _enum: "gradientType", _value: e.gradient ?? "linear" },
+        reverse: false, dither: false, align: true, scale: pctDesc(e.scale ?? 100), offset: { _obj: "paint", horizontal: pctDesc(0), vertical: pctDesc(0) },
+      }];
     default:
       return ["solidFill", { _obj: "solidFill", ...base, color: rgbDesc(e.color ?? [1, 1, 1]) }];
   }
 }
 
-const EFFECT_KEYS: Record<string, string> = { stroke: "frameFX", drop_shadow: "dropShadow", outer_glow: "outerGlow", inner_glow: "innerGlow", color_overlay: "solidFill" };
+const EFFECT_KEYS: Record<string, string> = {
+  stroke: "frameFX", drop_shadow: "dropShadow", outer_glow: "outerGlow", inner_glow: "innerGlow", color_overlay: "solidFill",
+  bevel: "bevelEmboss", gradient_overlay: "gradientFill",
+};
 
 commands.set_style = async (a) => {
   const doc = findDoc(a.document_id);

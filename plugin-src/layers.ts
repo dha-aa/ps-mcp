@@ -51,8 +51,11 @@ commands.set_layer = async (a) => {
     if (a.order === "front") await layer.bringToFront();
     if (a.order === "back") await layer.sendToBack();
     if (relLayer) {
+      // Moving releases a clipped layer's clip (seen live): put it back unless the call says otherwise.
+      const wasClipped = layer.isClippingMask;
       const place = a.above !== undefined ? "PLACEBEFORE" : a.below !== undefined ? "PLACEAFTER" : "PLACEINSIDE";
       await layer.move(relLayer, ps.constants.ElementPlacement[place as "PLACEBEFORE"]);
+      if (wasClipped && a.clip === undefined && !layer.isClippingMask) layer.isClippingMask = true;
     }
     if (a.locked === true) layer.allLocked = true;
     const out = layerBrief(layer);

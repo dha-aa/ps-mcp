@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.6
+
+- `set_style` gets `bevel` (style, technique, size, depth, angle, altitude, colours) and `gradient_overlay`: metal
+  type without raw descriptors (both proven live on the Jungle Quest poster). Shadow / glow `spread` is a percentage
+  (it was sent in pixels).
+- `set_layer above / below` keeps a clipped layer clipped: Photoshop releases the clip when a layer moves.
+
 ## 0.5.5
 
 - `set_layer clip` changes nothing when the layer already is (un)clipped: Photoshop threw "Release Clipping Mask is
