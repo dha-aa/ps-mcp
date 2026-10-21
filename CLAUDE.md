@@ -67,6 +67,9 @@ npm run typecheck
 - `constants.FlipAxis` does not exist (the docs list it): flip with the `flip` action descriptor (`set_layer`).
 - `Document.historyStates` / `activeHistoryState` answer for the ACTIVE document, whichever document they are read
   from: `history` activates its document first, or undo would act on another document.
+- `createPixelLayer` / `createLayerGroup` put the new layer on top whatever is selected (`createTextLayer` and fill
+  layers follow the selection): `layer_ops` moves it when `above` is given.
+- Selection bounds are clipped to the canvas.
 - New layers go above the selected layer; a layer moved down stays selected, so later layers land under what is
   above it. Tools that make layers take `above`; the server instructions tell the model.
 - Adjustment descriptors (levels, curves, hue/sat, brightness/contrast, black & white) store exactly what

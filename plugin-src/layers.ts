@@ -70,12 +70,15 @@ commands.layer_ops = async (a) => {
     activate(doc);
     if (above) doc.activeLayers = [above];
     switch (a.op) {
+      // createPixelLayer / createLayerGroup put the layer on top whatever is selected (seen live): move it.
       case "new_layer": {
         const l = await doc.createPixelLayer({ name: a.name });
+        if (above) await l.move(above, ps.constants.ElementPlacement.PLACEBEFORE);
         return { layer: layerBrief(l) };
       }
       case "new_group": {
         const g = await doc.createLayerGroup({ name: a.name });
+        if (above) await g.move(above, ps.constants.ElementPlacement.PLACEBEFORE);
         return { layer: layerBrief(g) };
       }
       case "duplicate": {

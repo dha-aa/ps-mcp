@@ -412,8 +412,9 @@ export function fakePhotoshop() {
     };
     d.createPixelLayer = async (o: { name?: string }) => {
       needModal("createPixelLayer");
+      // Live (PS 27.10): a new pixel layer goes on top, whatever is selected (text does follow the selection).
       const L = layer({ name: o.name ?? "Layer 1", box: { l: 0, t: 0, w: 0, h: 0 } });
-      d.layers.splice(Math.max(0, d.activeLayers[0] ? d.layers.indexOf(d.activeLayers[0]) : 0), 0, L);
+      d.layers.unshift(L);
       d.activeLayers = [L];
       return L;
     };
@@ -421,7 +422,7 @@ export function fakePhotoshop() {
       needModal("createLayerGroup");
       const L = layer({ name: o.name ?? "Group 1", kind: "group", box: { l: 0, t: 0, w: 0, h: 0 } });
       L.layers = [];
-      d.layers.splice(Math.max(0, d.activeLayers[0] ? d.layers.indexOf(d.activeLayers[0]) : 0), 0, L);
+      d.layers.unshift(L); // like createPixelLayer: on top
       d.activeLayers = [L];
       return L;
     };

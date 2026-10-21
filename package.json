@@ -1,6 +1,6 @@
 {
   "name": "photoshop-mcp",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "MCP server that drives a live Adobe Photoshop through a UXP plugin",
   "license": "MIT",
   "type": "module",

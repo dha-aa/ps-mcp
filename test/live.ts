@@ -115,7 +115,9 @@ await step("find_fonts and set_text: font used, name kept, centred; edit after r
 });
 await step("select: shapes and modes, subject into a mask, a layer's pixels, none", async () => {
   ok(near((await must("select", { document_id: doc, shape: "rect", bounds: [10, 20, 110, 120] })).selection, [10, 20, 110, 120]), "rect");
-  ok(near((await must("select", { document_id: doc, shape: "ellipse", bounds: [200, 0, 300, 50], mode: "add", expand: 5 })).selection, [5, 15, 305, 125], 2), "ellipse add + expand");
+  // Photoshop clips the selection's bounds to the canvas (top -5 -> 0).
+  const e = (await must("select", { document_id: doc, shape: "ellipse", bounds: [200, 0, 300, 50], mode: "add", expand: 5 })).selection;
+  ok(near(e, [5, 0, 305, 125], 2), "ellipse add + expand " + JSON.stringify(e));
   const m = await must("select", { document_id: doc, shape: "subject", layer_id: photo, mask_layer_id: photo });
   ok(m.mask_on === photo, JSON.stringify(m));
   ok((await must("select", { document_id: doc, shape: "layer", layer_id: text })).selection, "layer pixels");
@@ -167,7 +169,8 @@ await step("apply_filter: smart object refused with a hint, then rasterize + blu
   const r = await call("apply_filter", { document_id: doc, layer_id: photo, filter: "gaussian_blur", radius: 2 });
   ok(r.isError && r.json.error.code === "BAD_ARGS" && /rasterize/.test(r.json.error.hint), JSON.stringify(r.json));
   await must("set_layer", { document_id: doc, layer_id: photo, locked: false });
-  await must("apply_filter", { document_id: doc, layer_id: photo, filter: "gaussian_blur", radius: 2, rasterize: true });
+  const r1 = await must("apply_filter", { document_id: doc, layer_id: photo, filter: "gaussian_blur", radius: 2, rasterize: true });
+  ok(r1.layer.kind === "pixel", "after rasterize + blur the layer is " + JSON.stringify(r1.layer));
   await must("apply_filter", { document_id: doc, layer_id: photo, filter: "add_noise", amount: 5, monochromatic: true });
   await must("apply_filter", { document_id: doc, layer_id: photo, filter: "unsharp_mask", amount: 80, radius: 1.5, threshold: 2 });
 });

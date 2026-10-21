@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1
+
+- `layer_ops` new_layer / new_group with `above`: Photoshop puts a new pixel layer or group on top whatever is
+  selected (seen live), so the layer is moved explicitly.
+- Live suite: selection bounds are clipped to the canvas; the filter step reports the layer kind after rasterize.
+
 ## 0.5.0
 
 - The advertised tool list is slimmed (~9.1k -> ~6.0k tokens per request); zod still validates the full schemas.
