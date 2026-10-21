@@ -1,7 +1,8 @@
 # Roadmap: what the Photoshop UXP API lets us add
 
-**Status (0.5.0):** all slices built. Live in Photoshop 27.10: every tool (`npm run live`); record_actions capture
-needs `npm run live -- --record` with someone at Photoshop.
+**Status (0.5.2):** all slices built. `npm run live` passes all 20 steps in Photoshop 27.10 (2026-10-21), covering
+every tool with read-backs. Not yet live: record_actions capturing a step done by hand (`npm run live -- --record`),
+installing the `.ccx` package, CI (no remote yet).
 
 Source: Adobe's Photoshop UXP reference (github.com/AdobeDocs/uxp-photoshop, Apache-2.0), read 2026-10-18 against
 Photoshop 27.10. Versions below are the API's minimum Photoshop version from those docs. **The docs are claims, not
