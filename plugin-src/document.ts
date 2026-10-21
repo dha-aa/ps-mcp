@@ -44,8 +44,10 @@ function layerIds(doc: PsDocument): Set<number> {
 commands.place_image = async (a) => {
   const doc = findDoc(a.document_id);
   const entry = await fileEntry(a.path);
+  const above = a.above !== undefined ? findLayer(doc, a.above) : null;
   return modal("place_image", doc, async () => {
     activate(doc);
+    if (above) doc.activeLayers = [above];
     const before = layerIds(doc);
     const token = uxp.storage.localFileSystem.createSessionToken(entry);
     await play(

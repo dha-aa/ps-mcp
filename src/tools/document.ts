@@ -85,6 +85,7 @@ export function registerDocumentTools(r: ToolRegistry): void {
       name: z.string().min(1).optional(),
       opacity: z.number().min(0).max(100).optional(),
       locked: z.boolean().optional(),
+      above: z.number().int().optional().describe("Put it above this layer (default: above the selected layer)"),
     }),
     async (a) => {
       const img = await oneImage(a);

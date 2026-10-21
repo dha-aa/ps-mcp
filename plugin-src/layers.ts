@@ -28,7 +28,8 @@ commands.set_layer = async (a) => {
     if (a.opacity !== undefined) layer.opacity = a.opacity;
     if (a.fill_opacity !== undefined) layer.fillOpacity = a.fill_opacity;
     if (a.blend !== undefined) layer.blendMode = constant("BlendMode", a.blend) as string;
-    if (a.clip !== undefined) layer.isClippingMask = a.clip === true;
+    // Photoshop throws when the clip is already as asked ("Release Clipping Mask is not currently available").
+    if (a.clip !== undefined && layer.isClippingMask !== (a.clip === true)) layer.isClippingMask = a.clip === true;
     // Transforms keep the layer's centre: Photoshop rejected every anchor value we tried (see CLAUDE.md).
     if (a.scale !== undefined || a.rotate !== undefined || a.flip !== undefined) {
       const c = centreOf(layer);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.5
+
+- `set_layer clip` changes nothing when the layer already is (un)clipped: Photoshop threw "Release Clipping Mask is
+  not currently available".
+- `place_image` takes `above`, like the other tools that make layers.
+
 ## 0.5.4
 
 - Every batchPlay call checks its results: Photoshop does not throw when a descriptor fails, it returns

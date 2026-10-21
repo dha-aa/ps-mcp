@@ -1,7 +1,14 @@
 // Layers, canvas, history, filters, fills, adjustments and styles: plugin commands against the fake Photoshop.
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { loadPlugin } from "./plugin-harness.ts";
+import { writePng } from "./png.ts";
+
+const pngDir = mkdtempSync(join(tmpdir(), "psmcp-layers-"));
+const writePngIn = (name: string) => writePng(join(pngDir, name), 20, 20);
 
 async function rejects(p: Promise<unknown>, code: string): Promise<Record<string, string>> {
   try {
@@ -58,6 +65,21 @@ test("apply_filter rasterizes a locked smart object for real instead of making a
   assert.equal(r.layer.kind, "pixel");
   assert.equal(so.smartFilters, undefined, "no smart filter");
   assert.deepEqual(so.filters, ["applyGaussianBlur [2]"]);
+});
+
+test("set_layer clip: no change when it already is as asked (Photoshop throws on that)", async () => {
+  const { plugin, a } = setup();
+  await plugin.commands.set_layer({ layer_id: a.id, clip: false });
+  await plugin.commands.set_layer({ layer_id: a.id, clip: true });
+  await plugin.commands.set_layer({ layer_id: a.id, clip: true });
+  assert.equal(a.isClippingMask, true);
+});
+
+test("place_image above a given layer", async () => {
+  const { plugin, d, a, b } = setup();
+  d.activeLayers = [a];
+  const r = await plugin.commands.place_image({ path: writePngIn("p.png"), fit: "none", above: b.id, source_width: 20, source_height: 20 });
+  assert.equal(d.layers[d.layers.findIndex((l) => l.id === b.id) - 1].id, r.layer.id);
 });
 
 test("set_layer: scale and rotate keep the centre (Photoshop's own anchor can't be trusted); x,y and dx,dy move", async () => {

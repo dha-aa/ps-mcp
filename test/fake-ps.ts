@@ -167,7 +167,6 @@ export function fakePhotoshop() {
         L.box = { ...L.box, l: L.box.l + dx, t: L.box.t + dy };
       },
       fillOpacity: 100,
-      isClippingMask: false,
       effects: null as Record<string, any> | null,
       // Rotation turns about the top-left in this fake, so the plugin must restore the centre itself.
       async rotate(angle: number) {
@@ -235,6 +234,16 @@ export function fakePhotoshop() {
         (L as unknown as { filters: string[] }).filters.push(m + " " + JSON.stringify(args.filter((x) => typeof x !== "object")));
       };
     }
+    // Live (PS 27.10): setting a clip to what it already is throws ("Release Clipping Mask" / "Create Clipping Mask
+    // is not currently available").
+    let clipped = false;
+    Object.defineProperty(L, "isClippingMask", {
+      get: () => clipped,
+      set: (v: boolean) => {
+        if (state.inModal && v === clipped) throw new Error(`The command "${v ? "Create" : "Release"} Clipping Mask" is not currently available.`);
+        clipped = v;
+      },
+    });
     const blendDesc = Object.getOwnPropertyDescriptor(L, "blendMode");
     let blendValue = (blendDesc && blendDesc.value) ?? "normal";
     Object.defineProperty(L, "blendMode", {
@@ -615,7 +624,7 @@ export function fakePhotoshop() {
             const kind = t === "solidColorLayer" ? "solidColor" : t === "gradientLayer" ? "gradientFill" : t;
             const L = layer({ name: d.using.name ?? kind, kind, box: { l: 0, t: 0, w: doc.width, h: doc.height } });
             L.descriptor = JSON.parse(JSON.stringify(d.using));
-            L.isClippingMask = d.using.group === true;
+            if (d.using.group === true) L.isClippingMask = true;
             const at = doc.activeLayers[0] ? doc.layers.indexOf(doc.activeLayers[0]) : 0;
             doc.layers.splice(Math.max(0, at), 0, L);
             const sel = doc.selection.bounds;

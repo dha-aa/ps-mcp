@@ -2,7 +2,7 @@
 // The plugin is several script files (no imports) joined in order by scripts/build-plugin.ts into
 // plugin/js/main.js; test/plugin-harness.ts runs that same file in a vm with fake Photoshop modules.
 
-const PLUGIN_VERSION = "0.5.4";
+const PLUGIN_VERSION = "0.5.5";
 const SCAN_MS = 2000;
 const RETRY_MS = 10000;
 
