@@ -95,8 +95,9 @@ export function registerLookTools(r: ToolRegistry): void {
     }),
   );
 
+  const effectBlend = z.enum(["normal", "multiply", "screen", "overlay", "soft_light", "color_dodge", "linear_dodge"]);
   const effect = (extra: z.ZodRawShape) =>
-    z.union([z.literal(false), z.strictObject({ color: rgb.optional(), opacity: z.number().min(0).max(100).optional(), blend: z.enum(BLEND_MODES).optional(), ...extra })]).optional();
+    z.union([z.literal(false), z.strictObject({ color: rgb.optional(), opacity: z.number().min(0).max(100).optional(), blend: effectBlend.optional(), ...extra })]).optional();
   const size = z.number().min(0).max(250).optional();
   r.bridged(
     "set_style",

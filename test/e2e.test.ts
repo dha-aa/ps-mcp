@@ -106,6 +106,11 @@ test("tools, schema strictness and BRIDGE_DOWN without Photoshop", async () => {
 
   const unknown = await s.call("get_document", { nope: 1 });
   assert.equal(unknown.isError, true, "unknown keys are rejected");
+  assert.equal(unknown.json.error.code, "BAD_ARGS", "in our error format");
+  assert.match(unknown.json.error.message, /nope/);
+  const listed = JSON.stringify(tools);
+  assert.ok(!listed.includes("$schema") && !listed.includes("\"additionalProperties\":false") && !listed.includes("9007199254740991"), "listing is slimmed");
+  console.error(`tools/list: ${tools.length} tools, ${listed.length} characters (~${Math.round(listed.length / 3.6)} tokens)`);
   await s.close();
 });
 
