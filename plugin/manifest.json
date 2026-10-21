@@ -1,0 +1,25 @@
+{
+  "manifestVersion": 5,
+  "id": "com.photoshop-mcp.bridge",
+  "name": "Photoshop MCP",
+  "version": "0.4.0",
+  "main": "index.html",
+  "host": { "app": "PS", "minVersion": "25.10.0" },
+  "requiredPermissions": {
+    "localFileSystem": "fullAccess",
+    "network": { "domains": "all" }
+  },
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "mcpPanel",
+      "label": { "default": "Photoshop MCP" },
+      "minimumSize": { "width": 200, "height": 80 },
+      "maximumSize": { "width": 2000, "height": 2000 },
+      "preferredDockedSize": { "width": 240, "height": 90 },
+      "preferredFloatingSize": { "width": 260, "height": 90 },
+      "icons": [{ "width": 23, "height": 23, "path": "icons/panel.png", "scale": [1, 2], "theme": ["all"] }]
+    }
+  ],
+  "icons": [{ "width": 48, "height": 48, "path": "icons/plugin.png", "scale": [1, 2], "theme": ["all"], "species": ["pluginList"] }]
+}

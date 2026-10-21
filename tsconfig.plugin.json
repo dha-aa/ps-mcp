@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2022", "DOM"],
+    "outDir": "build/plugin",
+    "rootDir": "plugin-src",
+    "strict": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["plugin-src"]
+}

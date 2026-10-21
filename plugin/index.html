@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { margin: 0; padding: 10px 12px; font-family: sans-serif; font-size: 12px; color: var(--uxp-host-text-color); background: var(--uxp-host-background-color); }
+      #status { font-weight: bold; }
+      #status::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 6px; background: #999; }
+      #status.ok::before { background: #3a3; }
+      #status.wait::before { background: #d90; }
+      #detail { margin-top: 6px; color: var(--uxp-host-text-color-secondary); word-break: break-all; }
+    </style>
+  </head>
+  <body>
+    <div id="status" class="wait">Starting</div>
+    <div id="detail"></div>
+    <script src="js/main.js"></script>
+  </body>
+</html>
