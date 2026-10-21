@@ -1,8 +1,7 @@
 # Roadmap: what the Photoshop UXP API lets us add
 
-**Status (0.4.0):** slices 0-4 built and tested against the fake. Live in Photoshop 27.10: everything up to slice 1
-(plus `uxp_docs` against GitHub); slices 2-3 (layers, canvas, history, filters, fills, adjustments, styles) wait
-for a live run.
+**Status (0.5.0):** all slices built. Live in Photoshop 27.10: every tool (`npm run live`); record_actions capture
+needs `npm run live -- --record` with someone at Photoshop.
 
 Source: Adobe's Photoshop UXP reference (github.com/AdobeDocs/uxp-photoshop, Apache-2.0), read 2026-10-18 against
 Photoshop 27.10. Versions below are the API's minimum Photoshop version from those docs. **The docs are claims, not

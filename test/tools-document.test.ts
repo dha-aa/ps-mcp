@@ -53,6 +53,24 @@ test("get_document: no document, then defaults left out and the tree shown", asy
   assert.equal(both.active_id, d2.id);
 });
 
+test("get_document on a big PSD: max_layers counts what is left out; parent_id lists one group", async () => {
+  const { plugin, addDoc, layer } = loadPlugin();
+  const groups = Array.from({ length: 5 }, (_, g) => {
+    const G = layer({ name: "G" + g, kind: "group", box: { l: 0, t: 0, w: 1, h: 1 } });
+    G.layers = Array.from({ length: 9 }, (_, i) => layer({ name: `L${g}.${i}`, box: { l: 0, t: 0, w: 1, h: 1 } }));
+    return G;
+  });
+  addDoc({ title: "Big", width: 10, height: 10, layers: groups });
+  const r = await plugin.commands.get_document({ max_layers: 12 });
+  assert.equal(r.document.layers_not_shown, 50 - 12, "50 layers, 12 listed");
+  assert.match(r.hint, /parent_id/);
+  const one = await plugin.commands.get_document({ parent_id: groups[3].id, max_layers: 300 });
+  assert.deepEqual(one.document.parent, { id: groups[3].id, name: "G3" });
+  assert.equal(one.document.layers.length, 9);
+  assert.equal(one.document.layers_not_shown, undefined);
+  await rejects(plugin.commands.get_document({ parent_id: groups[3].layers![0].id }), "BAD_ARGS");
+});
+
 test("create_document runs in a modal scope and passes fill", async () => {
   const { plugin, state } = loadPlugin();
   const r = await plugin.commands.create_document({ width: 1080, height: 1920, resolution: 72, fill: "transparent" });

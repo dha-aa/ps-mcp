@@ -2,7 +2,7 @@
 // The plugin is several script files (no imports) joined in order by scripts/build-plugin.ts into
 // plugin/js/main.js; test/plugin-harness.ts runs that same file in a vm with fake Photoshop modules.
 
-const PLUGIN_VERSION = "0.4.1";
+const PLUGIN_VERSION = "0.5.0";
 const SCAN_MS = 2000;
 const RETRY_MS = 10000;
 
@@ -104,7 +104,15 @@ function box(b: PsBounds): number[] {
   return [round(b.left), round(b.top), round(b.right), round(b.bottom)];
 }
 
+/** Layers still allowed in one listing (get_document max_layers); the ones left out are counted. */
+const budget = { left: Infinity, skipped: 0 };
+
+function countLayers(ls: PsLayer[]): number {
+  return ls.reduce((n, l) => n + 1 + (l.layers ? countLayers(l.layers) : 0), 0);
+}
+
 function layerInfo(l: PsLayer, depth: number, maxDepth: number): Record<string, unknown> {
+  budget.left--;
   const o: Record<string, unknown> = { id: l.id, name: l.name, kind: l.kind };
   if (!l.visible) o.visible = false;
   if (Math.round(l.opacity) !== 100) o.opacity = round(l.opacity, 1);
@@ -114,17 +122,29 @@ function layerInfo(l: PsLayer, depth: number, maxDepth: number): Record<string, 
   if (l.isBackgroundLayer) o.background = true;
   o.bounds = box(l.bounds);
   if (l.layers) {
-    if (depth < maxDepth) o.layers = l.layers.map((c) => layerInfo(c, depth + 1, maxDepth));
+    if (depth < maxDepth) o.layers = listLayers(l.layers, depth + 1, maxDepth);
     else o.layer_count = l.layers.length;
   }
   return o;
+}
+
+function listLayers(ls: PsLayer[], depth: number, maxDepth: number): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  for (const l of ls) {
+    if (budget.left <= 0) {
+      budget.skipped += 1 + (l.layers ? countLayers(l.layers) : 0);
+      continue;
+    }
+    out.push(layerInfo(l, depth, maxDepth));
+  }
+  return out;
 }
 
 function docBrief(d: PsDocument): Record<string, unknown> {
   return { id: d.id, title: d.title, width: d.width, height: d.height, resolution: d.resolution };
 }
 
-function docInfo(d: PsDocument, maxDepth: number): Record<string, unknown> {
+function docInfo(d: PsDocument, maxDepth: number, parent?: PsLayer, maxLayers = Infinity): Record<string, unknown> {
   const o = docBrief(d);
   const mode = String(d.mode).replace(/ColorMode$|Mode$/, "");
   if (mode !== "RGB") o.mode = mode;
@@ -132,7 +152,11 @@ function docInfo(d: PsDocument, maxDepth: number): Record<string, unknown> {
   if (bits && bits !== 8) o.bits = bits;
   if (d.path) o.path = d.path;
   if (!d.saved) o.unsaved = true;
-  o.layers = d.layers.map((l) => layerInfo(l, 1, maxDepth));
+  budget.left = maxLayers;
+  budget.skipped = 0;
+  if (parent) o.parent = { id: parent.id, name: parent.name };
+  o.layers = listLayers(parent ? parent.layers ?? [] : d.layers, 1, maxDepth);
+  if (budget.skipped) o.layers_not_shown = budget.skipped;
   return o;
 }
 

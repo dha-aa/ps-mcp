@@ -26,14 +26,19 @@ npm run typecheck
   (helpers, `modal`, `fail`, `constant`, `centreAt`, the `commands` table), `bridge.ts` last. `env.d.ts` declares
   only the UXP / Photoshop APIs used; `test/fake-ps.ts` fakes exactly those. `plugin/` is what UXP Developer Tools
   loads (`js/` is generated and gitignored).
-- Tests: `test/plugin.test.ts`, `slice1.test.ts`, `slice2.test.ts` (commands in a vm via `test/plugin-harness.ts`),
-  `e2e.test.ts` (built server over stdio + real plugin over WebSocket), `docs.test.ts` (local stand-in for GitHub),
-  `registry.test.ts`, `static.test.ts`. `test/live.ts` and `scripts/call.ts` drive real Photoshop.
+- `src/slim.ts`: the advertised tool list is slimmed (zod still validates in full) and SDK validation errors become
+  BAD_ARGS; it wraps the SDK's tools/list and tools/call handlers (`adaptToolHandlers`).
+- Tests: `test/tools-document.test.ts`, `tools-edit.test.ts`, `tools-layers-looks.test.ts` (commands in a vm via
+  `test/plugin-harness.ts`), `e2e.test.ts` (built server over stdio + real plugin over WebSocket), `docs.test.ts`,
+  `slim.test.ts`, `registry.test.ts`, `static.test.ts`. Real Photoshop: `npm run live` (`test/live.ts`, every tool,
+  with read-backs) and `scripts/call.ts` (ad-hoc steps). `npm run check-api` checks `env.d.ts` against the docs.
 
 ## Rules
 
 - Adding a tool: a schema in `src/tools/`, a command of the same name in `plugin-src/`, tests, `EXPECTED_TOOLS` in
-  `test/e2e.test.ts`, and the README table.
+  `test/e2e.test.ts`, a step in `test/live.ts`, the README table and a CHANGELOG line.
+- Watch the token cost: `npm test` prints the size of tools/list. Share schemas (`src/tools/schemas.ts`), keep
+  descriptions short, never repeat in a description what the schema says.
 - Every Photoshop change goes through `modal(name, doc, fn)` (executeAsModal + one history step, rolled back on
   error). Reads stay outside it.
 - Photoshop enums are always `ps.constants.X` values (`constant(group, name)`), never strings.
@@ -44,7 +49,8 @@ npm run typecheck
   changes so the panel shows which build runs.
 - When real Photoshop behaves differently from `test/fake-ps.ts`, fix the fake first, then the code; check a fix with
   a mutation (the test must fail without it).
-- A green `npm test` does not prove it works in Photoshop: run the tool live (`scripts/call.ts`) before calling it done.
+- A green `npm test` does not prove it works in Photoshop: run `npm run live` before calling a change done.
+- `batch_play` file references go through the sandbox (`checkDescriptorPaths`) and become session tokens in the plugin.
 
 ## Photoshop quirks (found live, PS 27.10 / UXP 9.4)
 

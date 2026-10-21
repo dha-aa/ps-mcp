@@ -1,6 +1,6 @@
 {
   "name": "photoshop-mcp",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "MCP server that drives a live Adobe Photoshop through a UXP plugin",
   "license": "MIT",
   "type": "module",
@@ -11,7 +11,9 @@
   "files": [
     "dist",
     "plugin",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "npm run clean && npm run build:server && npm run build:plugin",
@@ -20,7 +22,10 @@
     "clean": "node -e \"for (const d of ['dist','build','plugin/js']) require('node:fs').rmSync(d,{recursive:true,force:true})\"",
     "typecheck": "node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit && node node_modules/typescript/bin/tsc -p tsconfig.plugin.json --noEmit && node node_modules/typescript/bin/tsc -p tsconfig.test.json",
     "start": "node dist/index.js",
-    "test": "npm run build && node --test test/*.test.ts"
+    "test": "npm run build && node --test test/*.test.ts",
+    "check-api": "node scripts/check-api.ts",
+    "package": "node scripts/package-plugin.ts",
+    "live": "node test/live.ts --yes"
   },
   "engines": {
     "node": ">=22.18"

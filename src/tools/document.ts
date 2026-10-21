@@ -25,11 +25,13 @@ export function registerDocumentTools(r: ToolRegistry): void {
         "The open documents and one document's size, resolution, mode and layer tree (top first; ids, kinds, bounds [left,top,right,bottom] px). Defaults are left out: visible, opacity 100, blend normal, unlocked.",
       readOnly: true,
       idempotent: true,
-      tooLargeHint: "The layer tree is too large: pass depth to show fewer levels.",
+      tooLargeHint: "The layer tree is too large: pass depth, parent_id or a smaller max_layers.",
     },
     z.strictObject({
       document_id: docId.optional(),
       depth: z.number().int().min(1).optional().describe("Levels of the layer tree to show (default all)"),
+      parent_id: z.number().int().optional().describe("Show only this group's layers"),
+      max_layers: z.number().int().min(1).max(2000).default(300).describe("Stop listing after this many layers (the rest are counted)"),
     }),
   );
 

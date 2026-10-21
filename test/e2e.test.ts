@@ -298,3 +298,21 @@ test("uxp_docs through the server: arguments checked; no network gives NETWORK w
   assert.ok(r.json.error.hint);
   await s.close();
 });
+
+test("batch_play: file paths are sandboxed on the server and turned into session tokens in the plugin", async () => {
+  const s = await startServer();
+  const p = plugin();
+  await p.plugin.scan();
+  await until(() => openConns(p) === 1, "plugin connection");
+  p.addDoc({ title: "B", width: 10, height: 10 });
+  const out = join(allowed, "saved.psd");
+  const ok = await s.call("batch_play", { descriptors: [{ _obj: "save", as: { _obj: "photoshop35Format" }, in: { _path: out, _kind: "local" } }] });
+  assert.equal(ok.isError, false, JSON.stringify(ok.json));
+  const sent = p.state.calls.find((c) => c.startsWith("batchPlay paths"))!;
+  assert.match(sent, /"_path":"tok\d+"/, "the plugin sent a session token, not the path");
+  assert.equal((await s.call("batch_play", { descriptors: [{ _obj: "open", null: { _path: outside, _kind: "local" } }] })).json.error.code, "FORBIDDEN");
+  assert.equal((await s.call("batch_play", { descriptors: [{ _obj: "open", null: { _path: "rel/x.psd", _kind: "local" } }] })).json.error.code, "BAD_ARGS");
+  assert.equal((await s.call("batch_play", { descriptors: [{ _obj: "x", deep: [{ a: { _path: 5 } }] }] })).json.error.code, "BAD_ARGS");
+  assert.equal((await s.call("batch_play", { descriptors: [{ _obj: "save", in: { _path: join(allowed, "no", "x.psd") } }] })).json.error.code, "NOT_FOUND");
+  await s.close();
+});

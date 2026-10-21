@@ -643,6 +643,8 @@ export function fakePhotoshop() {
             out.push(got);
           } else {
             if (d._obj === "fail") throw new Error("descriptor failed");
+            const paths = JSON.stringify(d).match(/"_path":"[^"]*"/g);
+            if (paths) state.calls.push("batchPlay paths " + paths.join(","));
             state.calls.push("batchPlay " + d._obj);
             out.push(d._obj === "make" ? { _obj: "make", layerID: 42 } : { ...d });
           }

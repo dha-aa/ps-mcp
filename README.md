@@ -12,19 +12,21 @@ writes `~/.photoshop-mcp/bridges/<pid>.json` (port + token, mode 0600). The plug
 connects to every server it finds, so several Claude sessions can share one Photoshop. Commands run one at a time,
 because Photoshop has one modal state. Every change runs in `executeAsModal` as one history step (one undo).
 
-Status: **0.4.0.** Tested against a fake Photoshop (`npm test`) that models the quirks found live; checked live in
-Photoshop 27.10 up to slice 1 (see `docs/roadmap.md`).
+Status: **0.5.0.** Needs Photoshop 26.9+ (tested on 27.10). Tested against a fake Photoshop (`npm test`) that models
+every quirk found live, and against real Photoshop with `npm run live`. Changes: `CHANGELOG.md`.
 
 ## Setup
 
-Needs Node 22.18+ and Photoshop 25.10+ (tested target: Photoshop 2026 / 27.x).
+Needs Node 22.18+ and Photoshop 26.9+ (tested: Photoshop 2026, 27.10).
 
 ```bash
 npm install
 npm run build
 ```
 
-Load the plugin (once):
+Load the plugin (once). Either install the package: `npm run package`, then double-click
+`dist/photoshop-mcp-<version>.ccx` (Creative Cloud installs it; not yet tried on a machine without Developer Mode), or
+load it for development:
 
 1. Photoshop: **Settings > Plugins > Enable Developer Mode**, then restart Photoshop.
 2. Open **Adobe UXP Developer Tools**: **Add Plugin** > choose `plugin/manifest.json` > **Load**.
@@ -89,14 +91,25 @@ build over it, and `preview` to compare.
 ## Development
 
 ```bash
-npm test          # build, then test/*.test.ts (no Photoshop needed)
-npm run typecheck # server, plugin and tests
-node test/live.ts --yes  # against real Photoshop (plugin loaded, panel open); creates documents
+npm test            # build, then test/*.test.ts (no Photoshop needed)
+npm run typecheck   # server, plugin and tests
+npm run live        # every tool against real Photoshop (plugin loaded, panel open); creates "mcp-live" documents
+npm run check-api   # the Photoshop API the plugin declares, against Adobe's reference
+npm run package     # dist/photoshop-mcp-<version>.ccx
 ```
 
-- `test/plugin.test.ts`: the built plugin's commands in a vm against `test/fake-ps.ts`. The fake models the real
-  constraints: changes outside `executeAsModal` throw, a busy modal state throws `{number: 9}`, Photoshop may
-  shrink an image on place, and layer bounds exclude transparent margins.
+- `test/tools-document.test.ts`, `tools-edit.test.ts`, `tools-layers-looks.test.ts`: the built plugin's commands in
+  a vm against `test/fake-ps.ts`, which models what real Photoshop does (changes only in `executeAsModal`, a busy
+  modal state, Photoshop's enums only, the quirks listed in CLAUDE.md).
 - `test/e2e.test.ts`: the built server over stdio with a real MCP client, plus the real plugin over a real
-  WebSocket. Covers sandboxing, base64 uploads, timeouts that drop unstarted commands, disconnects, bad tokens,
-  two servers at once and stale bridge files.
+  WebSocket: sandboxing (also inside `batch_play` descriptors), base64 uploads, timeouts, disconnects, bad tokens,
+  two servers, stale bridge files, outdated plugin builds, the error format.
+- `test/docs.test.ts` (`uxp_docs` against a local stand-in for GitHub), `slim.test.ts`, `registry.test.ts`,
+  `static.test.ts`. CI (`.github/workflows/test.yml`) runs the typecheck, the tests and the package.
+
+## Security
+
+The server listens on 127.0.0.1 only, with a random token per run (bridge files are mode 0600). Path arguments, and
+every `_path` inside `batch_play` descriptors, must be inside `PS_MCP_ALLOWED_DIRS`. The plugin itself asks for full
+file access (to read the bridge folder and your images) and `network: all`: Photoshop's manifest has no reliable way
+to allow only a local WebSocket with a changing port. `uxp_docs` is the only tool that reaches the internet (GitHub).

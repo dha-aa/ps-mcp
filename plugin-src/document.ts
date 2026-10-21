@@ -4,7 +4,12 @@ commands.get_document = async (a) => {
   const all = docs();
   if (!all.length && a.document_id === undefined) return { documents: [] };
   const d = findDoc(a.document_id);
-  const out: Record<string, unknown> = { document: docInfo(d, a.depth ?? Infinity) };
+  const parent = a.parent_id !== undefined ? findLayer(d, a.parent_id) : undefined;
+  if (parent && !parent.layers) fail("BAD_ARGS", `Layer ${parent.id} is not a group.`);
+  const out: Record<string, unknown> = { document: docInfo(d, a.depth ?? Infinity, parent, a.max_layers ?? Infinity) };
+  if ((out.document as { layers_not_shown?: number }).layers_not_shown) {
+    out.hint = "Not every layer is listed: pass parent_id to list one group, depth to show fewer levels, or a larger max_layers.";
+  }
   if (all.length > 1) out.documents = all.map((x) => ({ id: x.id, title: x.title }));
   if (ps.app.activeDocument && ps.app.activeDocument.id !== d.id) out.active_id = ps.app.activeDocument.id;
   return out;
@@ -81,11 +86,35 @@ commands.place_image = async (a) => {
   });
 };
 
+/** Replaces every "_path" (checked by the server) with the session token Photoshop needs; a file that doesn't exist yet
+ * (a save target) gets a new entry. */
+async function tokenizePaths(v: unknown): Promise<unknown> {
+  if (Array.isArray(v)) return Promise.all(v.map(tokenizePaths));
+  if (!v || typeof v !== "object") return v;
+  const out: Record<string, unknown> = {};
+  for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
+    if (k === "_path" && typeof x === "string") {
+      let entry: unknown;
+      try {
+        entry = await uxp.storage.localFileSystem.getEntryWithUrl("file:" + x);
+      } catch {
+        try {
+          entry = await uxp.storage.localFileSystem.createEntryWithUrl("file:" + x, { overwrite: false });
+        } catch (e) {
+          fail("NOT_FOUND", `Photoshop can't use ${x}: ${toErr(e).message}`, "The folder must exist.");
+        }
+      }
+      out[k] = uxp.storage.localFileSystem.createSessionToken(entry);
+    } else out[k] = await tokenizePaths(x);
+  }
+  return out;
+}
+
 commands.batch_play = async (a) => {
   const doc = a.document_id !== undefined ? findDoc(a.document_id) : ps.app.activeDocument;
   return modal("batch_play", doc, async () => {
     if (doc) activate(doc);
-    const r = await ps.action.batchPlay(a.descriptors, { modalBehavior: "execute" });
+    const r = await ps.action.batchPlay((await tokenizePaths(a.descriptors)) as object[], { modalBehavior: "execute" });
     // Photoshop echoes each descriptor back; keep only what is new: "get" results and ids of layers made.
     const out: Record<string, unknown> = { ran: r.length };
     const gets: unknown[] = [];

@@ -1,5 +1,5 @@
 // The parts of UXP and the Photoshop API the plugin uses (Photoshop 2026 / UXP 8). Kept small on purpose:
-// test/plugin.test.ts fakes exactly these.
+// test/tools-document.test.ts fakes exactly these.
 
 declare function require(name: "photoshop"): PsModule;
 declare function require(name: "uxp"): UxpModule;
@@ -179,5 +179,5 @@ interface UxpFs {
 /** Stamped by scripts/build-plugin.ts: a hash of the joined plugin code. */
 declare const PLUGIN_BUILD: string;
 
-/** Set by the test harness: lets test/plugin.test.ts reach the plugin's internals. */
+/** Set by the test harness: lets test/tools-document.test.ts reach the plugin's internals. */
 declare var __PS_MCP_TEST__: { [k: string]: unknown } | undefined;
